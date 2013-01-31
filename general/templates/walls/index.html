@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}walls{% endblock %}
+{% block body %}
+
+<div class="container-fluid">
+
+<div class="row-fluid">
+  <div class="span3 offset5 wall-list">
+    {% for wall in user.wall_set.all %}
+      <div><a href="/{{ wall.id }}/">{{ wall.title }}</a></div>
+    {% endfor %}
+    <form id="new-wall-form" action="/newWall/" method="post">
+        {% csrf_token %}
+        <input id="new-wall" type="text" name="wall" />
+        <input type="submit" id="create-new-wall" value="&rarr;" />
+    </form>
+    <div id="add-wall">+</div>
+  </div>
+</div>
+</div>
+    
+<div class="row-fluid footer">
+  <div class="span2 offset5">
+    <a href="/settings/">settings</a>
+    &nbsp;&nbsp;&nbsp;
+    <a href="{% url userena.views.signout %}">log out</a>
+  </div>
+</div>
+    
+<script src="{{STATIC_URL}}index.js"></script>
+    
+{% endblock %}

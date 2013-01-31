@@ -1,0 +1,35 @@
+{% extends 'userena/signin_form.html' %}
+{% load i18n %}
+
+{% block title %}Signed Out{% endblock %}
+{% block status_message %}<p class="status-message">You have been signed out.</p>{% endblock %}
+
+{% block left_panel %}
+<form action="" id="sign-in-form" class="left-panel" method="post">
+  {% csrf_token %}
+  <fieldset>
+    <legend>Log In<span class="or-login"><a href="/signup/">or sign up</a></span></legend>
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    {{ field.errors }}    
+    {% comment %} Displaying checkboxes differently {% endcomment %}
+    {% if field.name == 'remember_me' %}
+    
+    <div>
+		<input class="login-button" type="submit" value="Log In" />
+		<p class="checkbox remember-me">
+			<label for="id_{{ field.name }}">{{ field }} Remember me</label>
+		</p>
+	</div>
+    {% else %}
+    <p>
+    {{ field.label_tag }}
+    {{ field }}
+    </p>
+    {% endif %}
+    {% endfor %}
+  </fieldset>
+  <p class="forgot-password"><a href='{% url userena_password_reset %}' title="{% trans "Forgot your password?" %}">{% trans "Forgot your password?" %}</a></p>
+  {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
+</form>
+{% endblock %}

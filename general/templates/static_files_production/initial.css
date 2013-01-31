@@ -1,0 +1,139 @@
+input { width:95%; }
+
+.status {
+	padding-top:7%;
+	padding-bottom:4%;
+	text-align:center;
+}
+/*
+.row-fluid { border:1px solid red; }
+.span1, .span2, .span3, .span4, .span5, .span6, .span7 { border:1px solid green; }
+*/
+.login {
+	padding-left:4%;
+	padding-right:3%;
+}
+
+#signup-form {
+	margin-top:-20%;
+	margin-bottom:-26.5%;
+}
+
+.or-login {
+	color:#008bd3;
+	float:right;
+	cursor:pointer;
+	font-size:16px;
+	text-decoration:underline;
+}
+
+.blue-button {
+	color:#008bd3;
+	background-color:rgba(0,139,211,0.15);
+	border-radius:6px;
+	font-weight:bold;
+	text-align:center;
+	padding-top:4px;
+	border-width:1px;
+	width:100%;
+}
+
+.blue-button a {
+	text-decoration:none;
+}
+
+#back-from-settings {
+	text-align:center;
+	font-size:27px;
+	padding-top:1.5%;
+}
+
+#back-from-settings a {
+	color:#555555;
+	text-decoration:none;
+}
+
+.remember-me {
+	float:right;
+	width:45%;
+	padding-top:4px;
+}
+
+.forgot-password {
+	font-size:14px;
+	margin-top:5px;
+}
+
+.footer {
+	font-size:13px;
+	font-family:helveticaneue;
+	text-align:center;
+	padding-top:7%;
+	color:#666666;
+}
+
+.footer a {
+	color:#888888;
+	text-shadow:-1px -1px 0px rbga(0,0,0,1), 1px 1px 0px rbga(255,255,255,1);
+}
+
+.footer a:hover {
+	text-decoration:none;
+	color:#555555;
+}
+
+.wall-list {
+	margin-top:15%;
+	padding-left:4.5%;
+	font-weight:400;
+	height:300px;
+}
+
+.wall-list div {
+	margin-bottom:15px;
+}
+
+.wall-list div a { text-decoration:none; }
+
+#add-wall {
+	cursor:pointer;
+	color:#008bd3;
+	font-size:24px;
+/*	width:80px;*/
+	margin-top:-4px;
+}
+
+#add-wall:hover {
+	color:#005580;
+}
+
+#new-wall-form {
+	display:none;
+	padding-top:5px;
+}
+
+#create-new-wall {
+	font-size:25px;
+	color:#008bd3;
+	background-color:transparent;
+	border:0px;
+	margin-top:-12px;
+}
+
+#new-wall {
+	width:160px;
+}
+
+.brand-name {
+	color:#3F6D8C;
+	color:#3C8EBC;
+	padding-top:7%;
+	font-family:'Qwigley', cursive;
+	font-size:100px;
+	text-align:center;
+	text-shadow:-1px -1px 1px rgba(0,0,0,0.9), 1px 1px 1px rgba(255,255,255,1);
+}
+
+.first-line {
+	margin-bottom:62px;
+}
