@@ -40,8 +40,7 @@ class ExtraContextTemplateView(TemplateView):
     post = TemplateView.get
 
 @secure_required
-def signup(request, signup_form=SignupForm,
-           template_name='userena/signup.html', success_url='/',
+def signup(request, signup_form=SignupForm, template_name='userena/signup.html',
            extra_context=None):
     """
     Signup of an account.
@@ -54,10 +53,6 @@ def signup(request, signup_form=SignupForm,
     :param template_name:
         String containing the template name that will be used to display the
         signup form. Defaults to ``userena/signup_form.html``.
-    :param success_url:
-        String containing the URI which should be redirected to after a
-        successfull signup. If not supplied will redirect to
-        ``userena_signup_complete`` view.
     :param extra_context:
         Dictionary containing variables which are added to the template
         context. Defaults to a dictionary with a ``form`` key containing the
@@ -78,7 +73,7 @@ def signup(request, signup_form=SignupForm,
             userena_signals.signup_complete.send(sender=None,
                                                  user=user)
             
-            # A new signed user should logout the old one.
+            # Log out the current user.
             logout(request)
             
             # Must authenticate user before logging in.
@@ -87,7 +82,7 @@ def signup(request, signup_form=SignupForm,
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    return redirect(success_url)
+                    return redirect('/')
                 else:
                     return redirect('/login/?status=deactivated')
             else:
@@ -103,36 +98,7 @@ def signin(request, auth_form=AuthenticationForm,
            template_name='userena/login.html',
            redirect_field_name=REDIRECT_FIELD_NAME,
            redirect_signin_function=signin_redirect, extra_context=None):
-    """
-    Signin using email or username with password.
-    Signs a user in by combining email/username with password. If the
-    combination is correct and the user :func:`is_active` the
-    :func:`redirect_signin_function` is called with the arguments
-    ``REDIRECT_FIELD_NAME`` and an instance of the :class:`User` whois is
-    trying the login. The returned value of the function will be the URL that
-    is redirected to.
-    A user can also select to be remembered for ``USERENA_REMEMBER_DAYS``.
-    :param auth_form:
-        Form to use for signing the user in. Defaults to the
-        :class:`AuthenticationForm` supplied by userena.
-    :param template_name:
-        String defining the name of the template to use. Defaults to
-        ``userena/signin_form.html``.
-    :param redirect_field_name:
-        Form field name which contains the value for a redirect to the
-        successing page. Defaults to ``next`` and is set in
-        ``REDIRECT_FIELD_NAME`` setting.
-    :param redirect_signin_function:
-        Function which handles the redirect. This functions gets the value of
-        ``REDIRECT_FIELD_NAME`` and the :class:`User` who has logged in. It
-        must return a string which specifies the URI to redirect to.
-    :param extra_context:
-        A dictionary containing extra variables that should be passed to the
-        rendered template. The ``form`` key is always the ``auth_form``.
-    **Context**
-    ``form``
-        Form used for authentication supplied by ``auth_form``.
-    """
+
     form = auth_form
 
     if request.method == 'POST':
@@ -150,11 +116,6 @@ def signin(request, auth_form=AuthenticationForm,
                         userena_settings.USERENA_REMEMBER_ME_DAYS[1] * 86400)
                 else: request.session.set_expiry(0)
 
-                if userena_settings.USERENA_USE_MESSAGES:
-                    messages.success(request, _('You have been signed in.'),
-                                     fail_silently=True)
-
-                # Whereto now?
                 redirect_to = redirect_signin_function(
                     request.REQUEST.get(redirect_field_name), user)
                 return redirect(redirect_to)
@@ -172,7 +133,7 @@ def signin(request, auth_form=AuthenticationForm,
     if not extra_context: extra_context = dict()
     extra_context.update({
         'form': form,
-        'next': request.REQUEST.get(redirect_field_name),
+#        'next': request.REQUEST.get(redirect_field_name),
         'status': status,
     })
     return ExtraContextTemplateView.as_view(template_name=template_name,
@@ -205,6 +166,7 @@ def profile_detail(request,
     f = None
     email_f = email_form(user)
     pass_f = pass_form(user=user)
+    status = ''
     
     if request.method == 'POST':
         if 'em' in request.POST:
@@ -212,25 +174,18 @@ def profile_detail(request,
             f = email_f
             if email_f.is_valid():
                 email_f.save()
-                return redirect('/settings/?status=ce')
+                status = 'ce'
         elif 'pass' in request.POST:
             pass_f = pass_form(user=user, data=request.POST)
             f = pass_f
             if pass_f.is_valid():
                 pass_f.save()
                 userena_signals.password_complete.send(sender=None, user=user)
-                return redirect('/settings/?status=cp')
-    
-    if request.method == 'GET' and 'status' in request.GET:
-        status = request.GET['status']
-        if not status:
-            status = ''
-    else:
-        status = ''
+                status = 'cp'
     
     if not extra_context: extra_context = dict()
     
-    # Add invalid form f to extra context
+    # Add potentially invalid form f to extra context.
     extra_context['form'] = f
     
     extra_context['profile'] = user.get_profile()
