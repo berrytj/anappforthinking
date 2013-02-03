@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from accounts.models import MyProfile
 
 class Wall(models.Model):
+    '''A surface for users to create and manipulate marks.'''
+    
 	user = models.ForeignKey(User)
 	title = models.CharField(max_length=200)
 	last_updated = models.DateTimeField('last updated', default = datetime.now)
@@ -16,6 +18,8 @@ class Wall(models.Model):
 		ordering = ['-id']
     
 class Mark(models.Model):
+    '''A thought, idea, link, or other piece of text created by the user.'''
+    
 	wall = models.ForeignKey(Wall)
 	text = models.CharField(max_length=10000, default="", blank=True)
 	x = models.IntegerField()
@@ -26,6 +30,8 @@ class Mark(models.Model):
 		get_latest_by = "pk"
 
 class Waypoint(models.Model):
+    '''A short piece of text used to denote a category of marks for quick access.'''
+    
 	wall = models.ForeignKey(Wall)
 	text = models.CharField(max_length=100, default="", blank=True)
 	x = models.IntegerField()
@@ -35,7 +41,9 @@ class Waypoint(models.Model):
 	class Meta:
 		get_latest_by = "pk"
 
-class Undo(models.Model):  # a snapshot of a mark, with its own undo pk
+class Undo(models.Model):
+    '''A snapshot of a mark or waypoint containing the pk of its corresponding live object.'''
+    
 	wall = models.ForeignKey(Wall) # Probably not necessary since you have the mark/waypoint pk
 	obj_pk = models.IntegerField()
 	text = models.CharField(max_length=10000, default="", blank=True)
@@ -48,7 +56,9 @@ class Undo(models.Model):  # a snapshot of a mark, with its own undo pk
 		ordering = ['-pk']
 		get_latest_by = "pk"
 
-class Redo(models.Model):  # a snapshot of a mark, with its own redo pk
+class Redo(models.Model):
+    '''A snapshot of a mark or waypoint containing the pk of its corresponding live object.'''
+    
 	wall = models.ForeignKey(Wall)
 	obj_pk = models.IntegerField()
 	text = models.CharField(max_length=10000, default="", blank=True)

@@ -8,21 +8,29 @@ from accounts.models import MyProfile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from walls.models import Wall, Mark, Waypoint, Undo, Redo
-from walls.extra import clear_redos, save_undo, create_new, get_obj, execute_undo, get_user
+from walls.extra import clear_redos, save_undo, create_new,
+                        get_obj, execute_undo, get_user
 
 #use this to make "type" stuff simpler
 #from django.db.models import get_model
 
 @login_required(login_url='/login/')
 def index(request):
+    '''Renders the home page.'''
+    
     return render(request, 'walls/index.html')
 
 @login_required(login_url='/login/')
 def detail(request, pk):
+    '''Renders a user's wall, selected by primary key.'''
+    
 	w = get_object_or_404(Wall, pk=pk)
-	return render(request, 'walls/detail.html', { 'wall':w, 'username':request.user.username })
+	return render(request, 'walls/detail.html',
+	                       { 'wall':w, 'username':request.user.username })
 
 def newWall(request):
+    '''Creates a new wall, given a title.'''
+    
 	user = request.user
 	title = request.POST['wall']
 	new = Wall(user=user, title=title)
@@ -30,6 +38,8 @@ def newWall(request):
 	return HttpResponseRedirect(reverse('walls.views.detail', args=(new.pk,)))
 
 def newObj(request, wall_id):
+    '''Creates a new mark or waypoint at a specified location on a wall.'''
+    
 	w = get_object_or_404(Wall, pk=wall_id)
 	type = request.POST['type']
 	new = create_new(w, request.POST['text'], request.POST['x'], request.POST['y'], type)
@@ -41,7 +51,10 @@ def newObj(request, wall_id):
 	return HttpResponse(json.dumps(pk), mimetype="application/json")
 
 def eraseObj(request, wall_id):
-	w = get_object_or_404(Wall, pk=wall_id)  # how to do this with Wall (model name) as variable (eg Mark or Waypoint)?
+    '''Clears the text from a mark or waypoint, so it won't be shown onscreen
+    unless the user performs sufficient undos.'''
+    
+	w = get_object_or_404(Wall, pk=wall_id)
 	type = request.POST['type']
 	obj = get_obj(w, request.POST['pk'], type)
 	save_undo(w, obj, type)
@@ -51,6 +64,8 @@ def eraseObj(request, wall_id):
 	return HttpResponse(json.dumps("hey"), mimetype="application/json")
 
 def moveObj(request, wall_id):
+    '''Updates the database with the new location of a mark or waypoint.'''
+    
 	w = get_object_or_404(Wall, pk=wall_id)
 	type = request.POST['type']
 	obj = get_obj(w, request.POST['pk'], type)
@@ -62,6 +77,8 @@ def moveObj(request, wall_id):
 	return HttpResponse(json.dumps("hey"), mimetype="application/json")
 
 def editObj(request, wall_id):
+    '''Updates a mark with new text.'''
+    
 	w = get_object_or_404(Wall, pk=wall_id)
 	obj = get_obj(w, request.POST['pk'], "mark")
 	save_undo(w, obj, "mark")
@@ -70,11 +87,14 @@ def editObj(request, wall_id):
 	obj.save()
 	return HttpResponse(json.dumps("hey"), mimetype="application/json")
 
-def undo(request, wall_id):#start printing stuff
+def undo(request, wall_id):
+    '''Gets the most recent object from the undo stack and reverts the
+    corresponding object's attributes.'''
+    
 	w = get_object_or_404(Wall, pk=wall_id)
 	count = w.undo_set.count()
 	try:
-		prev = w.undo_set.latest()  # first object on the undo list is the previous version of a mark
+		prev = w.undo_set.latest()
 	except Undo.DoesNotExist:
 		return HttpResponse(json.dumps({ "pk":-1 }), mimetype="application/json")
 	redo = False
@@ -83,6 +103,9 @@ def undo(request, wall_id):#start printing stuff
 	return HttpResponse(json.dumps(render_data), mimetype="application/json")
 
 def redo(request, wall_id):
+    '''Gets the most recent object from the redo stack and updates the
+    corresponding object's attributes.'''
+    
 	w = get_object_or_404(Wall, pk=wall_id)
 	count = w.redo_set.count()
 	try:
