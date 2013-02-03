@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Your Walls » {{ wall.title }}{% endblock %}
+{% block title %}{{ wall.title }}{% endblock %}
 
 {% block style %}<link href="{{STATIC_URL}}walls.css" rel="stylesheet">{% endblock %}
 
@@ -10,9 +10,9 @@
 	
 	<div id="viewing-frame" class="frame cancel"></div>
   
-  <div id="menu-background-gradient"></div>
-  <div id="menu-background"></div>
-  <div id="menu">
+  <div id="menu-background-gradient" class="menu-base"></div>
+  <div id="menu-background" class="menu-base"></div>
+  <div id="menu" class="menu-base">
 	<span id="main-menu-button"><a id="main-menu-link" href="/">&larr;</a></span>
 	<span id="wall-title">{{ wall.title }}</span>
 	<span id="zoom-out">zoom out</span>

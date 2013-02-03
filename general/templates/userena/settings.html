@@ -9,7 +9,7 @@
     {% if status == 'cp' %}
         <p>Your password has been changed.</p>
     {% else %}{% if status == 'ce' %}
-        <p>Your email address has been updated.</p>
+        <p>Check your email for a verification link.</p>
     {% endif %}{% endif %}
   </div>
 </div>
@@ -20,9 +20,9 @@
             {% csrf_token %}
             <fieldset>
                 <legend>Change Email</legend>
-                {{ email_form }}
+                {{ email_form.as_p }}
             </fieldset>
-            <input type="submit" value="Change email" class="blue-button" />
+            <input type="submit" name="em" value="Change email" class="blue-button" />
         </form>
     </div>
     <div class="span2">
@@ -32,7 +32,7 @@
                 <legend>Change Password</legend>
                 {{ pass_form.as_p }}
             </fieldset>
-            <input type="submit" value="Change password" class="blue-button" />
+            <input type="submit" name="pass" value="Change password" class="blue-button" />
         </form>
     </div>
 </div>

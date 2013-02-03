@@ -66,10 +66,6 @@ def signup(request, signup_form=SignupForm,
     ``form``
         Form supplied by ``signup_form``.
     """
-    # If no usernames are wanted and the default form is used, fallback to the
-    # default form that doesn't display to enter the username.
-    if userena_settings.USERENA_WITHOUT_USERNAMES and (signup_form == SignupForm):
-        signup_form = SignupFormOnlyEmail
 
     form = signup_form()
 
@@ -85,6 +81,7 @@ def signup(request, signup_form=SignupForm,
             # A new signed user should logout the old one.
             logout(request)
             
+            # Must authenticate user before logging in.
             user = authenticate(username=request.POST['username'],
                                 password=request.POST['password1'])
             if user is not None:
@@ -205,22 +202,75 @@ def profile_detail(request,
                    extra_context=None, **kwargs):
     
     user = request.user
-    profile = user.get_profile()
+    f = None
+    email_f = email_form(user)
+    pass_f = pass_form(user=user)
     
     if request.method == 'POST':
-        if 'Change email' in request.POST:
-            email_form = email_form(user, request.POST, request.FILES)
-            if email_form.is_valid():
-                email_form.save()
+        if 'em' in request.POST:
+            email_f = email_form(user, request.POST, request.FILES)
+            f = email_f
+            if email_f.is_valid():
+                email_f.save()
                 return redirect('/settings/?status=ce')
-        elif 'Change password' in request.POST:
-            pass_form = pass_form(user=user, data=request.POST)
-            if pass_form.is_valid():
-                pass_form.save()
+        elif 'pass' in request.POST:
+            pass_f = pass_form(user=user, data=request.POST)
+            f = pass_f
+            if pass_f.is_valid():
+                pass_f.save()
                 userena_signals.password_complete.send(sender=None, user=user)
                 return redirect('/settings/?status=cp')
     
-    return render(request, 'userena/settings.html', {
-        'email_form':email_form(user),
-        'pass_form':pass_form(user),
-    })
+    if request.method == 'GET' and 'status' in request.GET:
+        status = request.GET['status']
+        if not status:
+            status = ''
+    else:
+        status = ''
+    
+    if not extra_context: extra_context = dict()
+    
+    # Add invalid form f to extra context
+    extra_context['form'] = f
+    
+    extra_context['profile'] = user.get_profile()
+    extra_context['email_form'] = email_f
+    extra_context['pass_form'] = pass_f
+    extra_context['status'] = status
+    
+    return ExtraContextTemplateView.as_view(template_name='userena/settings.html',
+                                            extra_context=extra_context)(request)
+
+@secure_required
+def email_confirm(request, confirmation_key,
+                  template_name='userena/email_confirm_fail.html',
+                  success_url=None, extra_context=None):
+    """
+    Confirms an email address with a confirmation key.
+
+    Confirms a new email address by running :func:`User.objects.confirm_email`
+    method. If the method returns an :class:`User` the user will have his new
+    e-mail address set and redirected to ``success_url``. If no ``User`` is
+    returned the user will be represented with a fail message from
+    ``template_name``.
+
+    :param confirmation_key:
+        String with a SHA1 representing the confirmation key used to verify a
+        new email address.
+
+    :param template_name:
+        String containing the template name which should be rendered when
+        confirmation fails. When confirmation is successful, no template is
+        needed because the user will be redirected to ``success_url``.
+
+    :param extra_context:
+        Dictionary of variables that are passed on to the template supplied by
+        ``template_name``.
+
+    """
+    user = UserenaSignup.objects.confirm_email(confirmation_key)
+    if user: return redirect('/login/?status=new_email')
+    else:
+        if not extra_context: extra_context = dict()
+        return ExtraContextTemplateView.as_view(template_name=template_name,
+                                            extra_context=extra_context)(request)

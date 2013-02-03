@@ -1,5 +1,9 @@
 input { width:95%; }
 
+.container {
+	width:900px;
+}
+
 .status {
 	padding-top:7%;
 	padding-bottom:4%;
@@ -7,7 +11,11 @@ input { width:95%; }
 }
 /*
 .row-fluid { border:1px solid red; }
-.span1, .span2, .span3, .span4, .span5, .span6, .span7 { border:1px solid green; }
+.row { border:1px solid blue; }
+.span1, .span2, .span3, .span4, .span5, .span6,
+.span7, .span8, .span8, .span9, .span10, .span11, .span12 {
+	border:1px solid green;
+}
 */
 .login {
 	padding-left:4%;
@@ -125,13 +133,12 @@ input { width:95%; }
 }
 
 .brand-name {
-	color:#3F6D8C;
-	color:#3C8EBC;
-	padding-top:7%;
-	font-family:'Qwigley', cursive;
-	font-size:100px;
+	color:#006496;
+	padding-top:8%;
+	font-size:50px;
+	font-weight:bold;
 	text-align:center;
-	text-shadow:-1px -1px 1px rgba(0,0,0,0.9), 1px 1px 1px rgba(255,255,255,1);
+	text-shadow:0px -1px 1px rgba(0,0,0,0.9), 0px 1px 1px rgba(255,255,255,1);
 }
 
 .first-line {

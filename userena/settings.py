@@ -41,7 +41,8 @@ USERENA_REMEMBER_ME_DAYS = getattr(settings,
 USERENA_FORBIDDEN_USERNAMES = getattr(settings,
                                       'USERENA_FORBIDDEN_USERNAMES',
                                       ('signup', 'signout', 'signin',
-                                       'activate', 'me', 'password'))
+                                       'activate', 'me', 'password',
+                                       'admin', 'settings'))
 
 USERENA_USE_HTTPS = getattr(settings,
                             'USERENA_USE_HTTPS',

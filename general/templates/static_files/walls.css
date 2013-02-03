@@ -9,13 +9,20 @@ body {
 	position:absolute;
 }
 
-#menu-background-gradient {
+.menu-base {
 	position:fixed;
 	margin:2.5% 0 0 5%;
 	padding-top:10px;
 	height:30px;
 	width:90%;
 	border-radius:3px;
+	
+	margin:0 0 0 0;
+	width:100%;
+	border-radius:0px;
+}
+
+#menu-background-gradient {
 	opacity:0.9;
 	z-index:9999;
 
@@ -31,12 +38,6 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fefefe', end
 }
 
 #menu-background {
-	position:fixed;
-	margin:2.5% 0 0 5%;
-	padding-top:10px;
-	height:30px;
-	width:90%;
-	border-radius:3px;
 	background-image:url("images/darknoise.png");
 	background-repeat:repeat;
 	opacity:0.2;
@@ -44,12 +45,6 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fefefe', end
 }
 
 #menu {
-	position:fixed;
-	margin:2.5% 0 0 5%;
-	padding-top:10px;
-	height:30px;
-	width:90%;
-	border-radius:3px;
 	font-size:15px;
 	font-weight:600;
 	color:#009AC9;
