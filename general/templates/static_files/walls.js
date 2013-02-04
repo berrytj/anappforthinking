@@ -114,20 +114,22 @@ function initMark($mark) { // use pk instead of whole mark for these functions?
 		 		function() { if(!dragging) $(this).children(".x").css("opacity", 0); });
 }
 
+function createWaypointTag($wp, pk) {
+    var tagHtml = '<span id="waypoint'+ pk +'tag" class="wp-tag">'+ $wp.text() +'</span>';
+	$("#waypoint-tags").prepend(tagHtml);
+	var $tag = $("#waypoint"+pk+"tag");
+	$tag.mousedown(function(e) { mousedownEvents(e, $tag); });
+	$tag.mouseup(function(e) { mouseupEvents(e, $tag); });
+}
+
 function initWaypoint($wp) {
-	var id = $wp.attr("id");
-	if(id !== "w-input") {
+	if($wp.attr("id") !== "w-input") {
 		makeDraggable($wp, "waypoint");
+//		attachX($wp, "waypoint");
 		$wp.mousedown(function(e) { mousedownEvents(e, $wp); });
 		$wp.mouseup(function(e) { mouseupEvents(e, $wp); });
 		var pk = getPK($wp);
-		if(!$("#waypoint"+pk+"tag").length) {
-		    var tagHtml = '<span id="waypoint'+ pk +'tag" class="wp-tag">'+ $wp.text() +'</span>';
-		    $("#waypoint-tags").prepend(tagHtml);
-		    var $tag = $("#waypoint"+pk+"tag");
-		    $tag.mousedown(function(e) { mousedownEvents(e, $tag); });
-		    $tag.mouseup(function(e) { mouseupEvents(e, $tag); });
-		}
+		if(!$("#waypoint"+pk+"tag").length) createWaypointTag($wp, pk);
 	}
 }
 
