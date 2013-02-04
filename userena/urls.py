@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 
 from userena import views as userena_views
 from userena import settings as userena_settings
+from django.core.urlresolvers import reverse
 
 urlpatterns = patterns('',
     
@@ -31,7 +32,8 @@ urlpatterns = patterns('',
        name='userena_password_reset_done'),
     url(r'^password/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
        auth_views.password_reset_confirm,
-       {'template_name': 'userena/password_reset_confirm_form.html'},
+       {'template_name': 'userena/password_reset_confirm_form.html',
+        'post_reset_redirect': '/login/'},
        name='userena_password_reset_confirm'),
     url(r'^password/reset/confirm/complete/$',
        auth_views.password_reset_complete,

@@ -1,30 +1,23 @@
 input { width:95%; }
 
 .container {
-	width:900px;
+	width:920px;
 }
 
 .status {
 	padding-top:7%;
-	padding-bottom:4%;
 	text-align:center;
+	min-height:50px;
 }
 /*
-.row-fluid { border:1px solid red; }
 .row { border:1px solid blue; }
 .span1, .span2, .span3, .span4, .span5, .span6,
 .span7, .span8, .span8, .span9, .span10, .span11, .span12 {
 	border:1px solid green;
 }
 */
-.login {
-	padding-left:4%;
-	padding-right:3%;
-}
-
-#signup-form {
-	margin-top:-20%;
-	margin-bottom:-26.5%;
+.content {
+	height:400px;
 }
 
 .or-login {
@@ -34,6 +27,10 @@ input { width:95%; }
 	font-size:16px;
 	text-decoration:underline;
 }
+
+#reset-box { margin-top:55px; }
+#reset-message { margin-top:100px; }
+#reset-confirm-box { margin-top:20px; }
 
 .blue-button {
 	color:#008bd3;
@@ -74,7 +71,7 @@ input { width:95%; }
 
 .footer {
 	font-size:13px;
-	font-family:helveticaneue;
+	font-family:HelveticaNeue;
 	text-align:center;
 	padding-top:7%;
 	color:#666666;
@@ -107,7 +104,6 @@ input { width:95%; }
 	cursor:pointer;
 	color:#008bd3;
 	font-size:24px;
-/*	width:80px;*/
 	margin-top:-4px;
 }
 
@@ -134,7 +130,7 @@ input { width:95%; }
 
 .brand-name {
 	color:#006496;
-	padding-top:8%;
+	margin-top:10%;
 	font-size:50px;
 	font-weight:bold;
 	text-align:center;
