@@ -5,6 +5,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    url(r'^backbone/$', 'walls.views.wall'),
 	url(r'^admin/', include(admin.site.urls)),
 	url(r'^settings/', 'userena.views.profile_detail'),
 	url(r'^', include('walls.urls')),

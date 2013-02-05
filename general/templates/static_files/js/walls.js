@@ -13,6 +13,33 @@ var mouseupCount = 0;
 var NOT_FADED_COLOR = $("#undo-button").css("color");
 var FADED_COLOR = "#AAAAAA";
 
+var Mark = Backbone.Model.extend({
+    url: '/' + wall_id + '/newObj/'
+});
+
+var Marks = Backbone.Collection.extend({
+    model: Mark
+});
+
+var NewMarkView = Backbone.View.extend({
+    events: {
+        'submit form': 'addStatus'
+    },
+
+    initialize: function() {
+        this.collection.on('add', this.clearInput, this);
+    },
+
+    addStatus: function(e) {
+        e.preventDefault();
+
+        this.collection.create({ text:
+
+
+
+
+
+
 function moveMarkToFront($mark) {
 	var index_highest = 0;
    	$(".mark").each(function() {

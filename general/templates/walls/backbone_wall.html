@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ wall.title }}{% endblock %}
+
+{% block style %}<link href="{{STATIC_URL}}walls.css" rel="stylesheet">{% endblock %}
+
+{% block body %}
+
+<div id="wrapper">
+	
+	<div id="viewing-frame" class="frame cancel"></div>
+  
+  <div id="menu-background-gradient" class="menu-base"></div>
+  <div id="menu-background" class="menu-base"></div>
+  <div id="menu" class="menu-base">
+	<span id="main-menu-button"><a id="main-menu-link" href="/">&larr;</a></span>
+	<span id="wall-title">{{ wall.title }}</span>
+	<span id="zoom-out">zoom out</span>
+    <span id="zoom-in">zoom in</span>
+    <span id="undo-button">undo</span>
+    <span id="redo-button">redo</span>
+  </div>
+	
+	<div id="waypoint-tags">
+		<span id="add-waypoint" class="wp-tag"> + </span>
+		<span id="hide-waypoint-tags">&laquo;</span>
+    </div>
+    
+	{% if error_message %}<p id="error"><strong>{{ error_message }}</strong></p>{% endif %}
+
+	{% for mark in wall.mark_set.all %}
+		{% if mark.text|length %}
+			<div id="mark{{ mark.pk }}" class="mark" style="left:{{ mark.x }}px; top:{{ mark.y }}px;">
+				<div class="bullet">&there4;&nbsp;</div>
+				<div class="cont">
+					<span id="sizer{{ mark.pk }}" class="sizer">{{ mark.text }}</span>
+				</div>
+			</div>
+		{% endif %}
+	{% endfor %}
+	
+	{% for wp in wall.waypoint_set.all %}
+		{% if wp.text|length %}
+			<div id="waypoint{{ wp.pk }}" class="waypoint" style="left:{{ wp.x }}px; top:{{ wp.y }}px;">
+				{{ wp.text }}
+			</div>
+		{% endif %}
+	{% endfor %}
+	
+	<textarea id="input" name="mark" style="display:none;"></textarea>
+	<textarea id="w-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
+	
+</div>
+
+<script>
+var username = "{{username}}";
+var wall_id = "{{ wall.id }}";
+</script>
+
+<script src="{{STATIC_URL}}walls.js"></script>
+
+{% endblock %}

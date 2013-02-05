@@ -20,11 +20,11 @@ def index(request):
     return render(request, 'walls/index.html')
 
 @login_required(login_url='/login/')
-def detail(request, pk):
+def wall(request, pk):
     '''Renders a user's wall, selected by primary key.'''
     
     w = get_object_or_404(Wall, pk=pk)
-    return render(request, 'walls/detail.html',
+    return render(request, 'walls/backbone_wall.html',
                            { 'wall':w, 'username':request.user.username })
 
 def newWall(request):
