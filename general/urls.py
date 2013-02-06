@@ -4,10 +4,20 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
+from django.conf.urls.defaults import *
+from tastypie.api import Api
+from walls.api import WallResource, MarkResource, UserResource
+
+
+v1_api = Api(api_name='v1')
+v1_api.register(UserResource())
+v1_api.register(WallResource())
+v1_api.register(MarkResource())
+
 urlpatterns = patterns('',
-    url(r'^backbone/$', 'walls.views.wall'),
 	url(r'^admin/', include(admin.site.urls)),
 	url(r'^settings/', 'userena.views.profile_detail'),
+	url(r'^api/', include(v1_api.urls)),
 	url(r'^', include('walls.urls')),
 	url(r'^', include('userena.urls')),
 )

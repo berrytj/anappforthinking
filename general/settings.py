@@ -153,6 +153,8 @@ INSTALLED_APPS = (
 	'easy_thumbnails',
 	'accounts',
 	'storages',
+	'tastypie',
+	'backbone_tastypie',
 )
 
 # A sample logging configuration. The only tangible logging

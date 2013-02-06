@@ -1,11 +1,28 @@
 {% extends "base.html" %}
-
 {% block title %}{{ wall.title }}{% endblock %}
-
-{% block style %}<link href="{{STATIC_URL}}walls.css" rel="stylesheet">{% endblock %}
-
+{% block style %}
+<!--    <link href="{{STATIC_URL}}css/walls.css" rel="stylesheet">-->
+{% endblock %}
 {% block body %}
+    
+	<section id='markapp'>
+	    <div id='wall'>
+	        <textarea id='input' class='input'></textarea>
+	    </div>
+	</section>
+	
+	<script type="text/template" id="mark-template">
+<!--		<div class="view">-->
+<!--		    <textarea class="input"><%- text %></textarea>-->
+            <textarea class="input"></textarea>
+		    <div class='labelBlock'>
+			    <label><%- text %></label>
+			</div>
+			<button class="destroy">xx</button>
+<!--		</div>-->
+	</script>
 
+<!--
 <div id="wrapper">
 	
 	<div id="viewing-frame" class="frame cancel"></div>
@@ -51,12 +68,16 @@
 	<textarea id="w-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
 	
 </div>
+-->
 
 <script>
-var username = "{{username}}";
+var username = "{{ username }}";
 var wall_id = "{{ wall.id }}";
 </script>
 
-<script src="{{STATIC_URL}}walls.js"></script>
+{% endblock %}
+{% block scripts %}
+
+<script src="{{STATIC_URL}}js/backbone_walls.js"></script>
 
 {% endblock %}

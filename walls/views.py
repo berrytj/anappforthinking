@@ -36,17 +36,36 @@ def newWall(request):
     new.save()
     return HttpResponseRedirect(reverse('walls.views.detail', args=(new.pk,)))
 
-def newObj(request, wall_id):
+def read(request):
     '''Creates a new mark or waypoint at a specified location on a wall.'''
     
+    wall_id = request.POST['wall_id']
     w = get_object_or_404(Wall, pk=wall_id)
-    type = request.POST['type']
-    new = create_new(w, request.POST['text'], request.POST['x'], request.POST['y'], type)
-    new.save()
-    new.text = ""  # not saved, just used to put empty mark in undo stack
-    save_undo(w, new, type)
-    clear_redos()
-    pk = new.pk
+    print w.title, w.user
+#    type = request.POST['type']
+#    new = create_new(w, request.POST['text'], request.POST['x'], request.POST['y'], type)
+#    new.save()
+#    new.text = ""  # not saved, just used to put empty mark in undo stack
+#    save_undo(w, new, type)
+#    clear_redos()
+#    pk = new.pk
+    pk = 100
+    return HttpResponse(json.dumps(pk), mimetype="application/json")
+
+def newObj(request):
+    '''Creates a new mark or waypoint at a specified location on a wall.'''
+    
+    wall_id = request.POST['wall_id']
+    w = get_object_or_404(Wall, pk=wall_id)
+    print w.title, w.user
+#    type = request.POST['type']
+#    new = create_new(w, request.POST['text'], request.POST['x'], request.POST['y'], type)
+#    new.save()
+#    new.text = ""  # not saved, just used to put empty mark in undo stack
+#    save_undo(w, new, type)
+#    clear_redos()
+#    pk = new.pk
+    pk = 100
     return HttpResponse(json.dumps(pk), mimetype="application/json")
 
 def eraseObj(request, wall_id):
@@ -59,6 +78,17 @@ def eraseObj(request, wall_id):
     save_undo(w, obj, type)
     clear_redos()
     obj.text = ""  # front-end knows not to render empty marks (they're pseudo-deleted)
+    obj.save()
+    return HttpResponse(json.dumps("hey"), mimetype="application/json")
+
+def update(request, wall_id):
+    w = get_object_or_404(Wall, pk=wall_id)
+    type = request.POST['type']
+    obj = get_obj(w, request.POST['pk'], type)
+    save_undo(w, obj, type)
+    clear_redos()
+    obj.x = request.POST['x']
+    obj.y = request.POST['y']
     obj.save()
     return HttpResponse(json.dumps("hey"), mimetype="application/json")
 
