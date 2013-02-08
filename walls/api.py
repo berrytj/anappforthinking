@@ -23,10 +23,10 @@ class WallResource(ModelResource):
     class Meta:
         queryset = Wall.objects.all()
         authorization = Authorization()
+        always_return_data = True
         filtering = {
             'id': ALL,
             'user': ALL_WITH_RELATIONS,
-#            'pub_date': ['exact', 'lt', 'lte', 'gte', 'gt'],
         }
 
 class MarkResource(ModelResource):
@@ -35,6 +35,7 @@ class MarkResource(ModelResource):
     class Meta:
         queryset = Mark.objects.all()
         authorization = Authorization()
+        always_return_data = True
         filtering = {
             'id': ALL,
             'wall': ALL_WITH_RELATIONS,

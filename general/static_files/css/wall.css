@@ -1,0 +1,57 @@
+body {
+/*    width:5000px;
+    height:3000px;*/
+    background-color: #AAAAAA;
+    font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	line-height: 1.4em; /* affects toolbar, fix */
+    color: #4d4d4d;
+}
+
+#wall {
+    width:5000px;
+    height:3000px;
+/*    padding-top:40px;*/
+}
+
+.input {
+    position:absolute;
+    display:none;
+    width:400px;
+}
+
+.mark {
+    position:absolute;
+/*    max-width:450px;*/
+}
+
+label {
+    display:inline;
+}
+
+.labelBlock {
+    display:inline-block;
+    width:370px;
+}
+
+button {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	font-size: 100%;
+	vertical-align: baseline;
+	font-family: inherit;
+	color: inherit;
+	-webkit-appearance: none;
+	/*-moz-appearance: none;*/
+	-ms-appearance: none;
+	-o-appearance: none;
+	appearance: none;
+}
+
+.destroy {
+    display:inline-block;
+    vertical-align:top;
+    opacity:0;
+    color:darkred;
+}

@@ -5,9 +5,10 @@
 	<link rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico" />
 	<link href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" rel="stylesheet">
     <link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.css" rel="stylesheet">
-    <link href="{{STATIC_URL}}css/sample.css" rel="stylesheet">
     <link href="{{STATIC_URL}}css/base.css" rel="stylesheet">
     <link href="{{STATIC_URL}}css/initial.css" rel="stylesheet">
+    <link href="{{STATIC_URL}}css/wall.css" rel="stylesheet">
+    <link href="{{STATIC_URL}}css/toolbar.css" rel="stylesheet">
     {% block style %}{% endblock %}
     
     <title>thinkingapp » {% block title %}{% endblock %}</title>
@@ -33,7 +34,6 @@
 	<script src="{{ STATIC_URL }}lib/bootstrap/js/bootstrap.min.js"></script>
 	<script src="{{ STATIC_URL }}lib/underscore.js"></script>
 	<script src="{{ STATIC_URL }}lib/backbone.js"></script>
-	<script src="{{ STATIC_URL }}lib/backbone-tastypie.js"></script>
     <script src="{{ STATIC_URL }}lib/backbone-localstorage.js"></script>
 	
 	{% block scripts %}

@@ -5,21 +5,39 @@
 {% endblock %}
 {% block body %}
     
-	<section id='markapp'>
+<!--	<section id='markapp'>-->
+	    
+	    <div id="toolbar">
+	        <div id="menu-background-gradient" class="menu-base"></div>
+            <div id="menu-background" class="menu-base"></div>
+            <div id="menu" class="menu-base">
+                <span id="main-menu-button"><a id="main-menu-link" href="/">&larr;</a></span>
+                <span id="wall-title">{{ wall.title }}</span>
+                <span id="zoom-out">zoom out</span>
+                <span id="zoom-in">zoom in</span>
+                <span id="undo-button">undo</span>
+                <span id="redo-button">redo</span>
+            </div>
+        </div>
+	    
+<!--	    <div id='wall-container'>-->
 	    <div id='wall'>
 	        <textarea id='input' class='input'></textarea>
 	    </div>
-	</section>
+<!--	    </div>-->
+	    
+<!--	</section>-->
 	
-	<script type="text/template" id="mark-template">
-<!--		<div class="view">-->
-<!--		    <textarea class="input"><%- text %></textarea>-->
-            <textarea class="input"></textarea>
-		    <div class='labelBlock'>
-			    <label><%- text %></label>
-			</div>
-			<button class="destroy">xx</button>
-<!--		</div>-->
+	<script type='text/template' id='mark-template'>
+        
+        <textarea class='input'></textarea>
+		
+		<div class='labelBlock'>
+			<label><%- text %></label>
+		</div>
+		
+		<button class='destroy'>x</button>
+		
 	</script>
 
 <!--
@@ -78,6 +96,13 @@ var wall_id = "{{ wall.id }}";
 {% endblock %}
 {% block scripts %}
 
-<script src="{{STATIC_URL}}js/backbone_walls.js"></script>
+<script src="{{STATIC_URL}}js/models/tastypie.js"></script>
+<script src="{{STATIC_URL}}js/models/mark.js"></script>
+<script src="{{STATIC_URL}}js/collections/tastypie.js"></script>
+<script src="{{STATIC_URL}}js/collections/marks.js"></script>
+<script src="{{STATIC_URL}}js/views/app.js"></script>
+<script src="{{STATIC_URL}}js/views/mark.js"></script>
+<script src="{{STATIC_URL}}js/views/toolbar.js"></script>
+<script src="{{STATIC_URL}}js/walls.js"></script>
 
 {% endblock %}
