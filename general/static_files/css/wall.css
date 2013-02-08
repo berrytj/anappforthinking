@@ -1,36 +1,47 @@
 body {
-/*    width:5000px;
-    height:3000px;*/
-    background-color: #AAAAAA;
     font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	line-height: 1.4em; /* affects toolbar, fix */
-    color: #4d4d4d;
+    color: #3d3d3d;
+    background-color: #DDDDDD;
+    background-image: url('../images/4.jpg'); /* From subtlepatterns.com */
+/*    background-image: url('../images/whitey.png'); /* From subtlepatterns.com */
 }
 
 #wall {
     width:5000px;
     height:3000px;
-/*    padding-top:40px;*/
 }
 
 .input {
     position:absolute;
     display:none;
-    width:400px;
+    width:380px;
+    /*add padding so editing text doesn't move it.
+    can you do with zoom? maybe it only has to work at
+    normal zoom. */
+    
+    padding:0px 13px 2px 11px;
+    margin-top:-1px;
+	height:auto;
+	overflow:hidden;
+	resize:none;
+	z-index:10000;
 }
 
-.mark {
-    position:absolute;
-/*    max-width:450px;*/
-}
+.mark { position:absolute; }
 
-label {
-    display:inline;
-}
+label { display:inline; }
 
 .labelBlock {
     display:inline-block;
     width:370px;
+    cursor:pointer;
+}
+
+.bullet {
+	display:inline-block;
+	vertical-align:top;
+	color:#666666;
 }
 
 button {

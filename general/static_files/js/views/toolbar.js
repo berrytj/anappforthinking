@@ -22,7 +22,20 @@ var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
 //		    'click #redo-button': 'redo',
 		},
 		
-		initialize: function(options) { this.dispatcher = options.dispatcher; },
+		initialize: function(options) {
+		    
+		    this.dispatcher = options.dispatcher;
+		    var d = this.dispatcher;
+		    
+		    $("#zoom-slider").slider({ animate: 'slow',
+                                       min: 0,
+                                       max: 10,
+                                       step: 1,
+                                       slide: function(e, ui) {
+                                           d.trigger('zoom', ui.value);
+                                       }
+            });
+		},
 		
 		zoomOut: function() { this.zoom(ZOOM_OUT_FACTOR); },
 		zoomIn:  function() { this.zoom(ZOOM_IN_FACTOR);  },

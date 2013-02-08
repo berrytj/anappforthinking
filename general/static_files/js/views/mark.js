@@ -3,12 +3,13 @@
 
 var app = app || {};
 var LABEL_PADDING = 3;
-var MARK_PADDING = 20;
+var MARK_PADDING = 40;
 var PRIMARY_FONT_SIZE = 14;
 var ORIG_MAX_WIDTH = 370;
+var ORIG_INPUT_WIDTH = 380;
 var FONT_SIZE_TO_LINE_HEIGHT = 1.43;
 var ENTER_KEY = 13;
-	
+
 (function() {
     
     'use strict';
@@ -22,8 +23,8 @@ var ENTER_KEY = 13;
 
 		// The DOM events specific to an item.
 		events: {
-		    'mousedown':          'stopPropagation',
-		    'click label':        'edit',
+		    'mousedown':          'cleanup',
+		    'click .labelBlock':  'edit',
 		    'keypress .input':    'finishEditing',
 		    'mouseover':          'showX',
 			'mousedown .destroy': 'clear',
@@ -34,108 +35,116 @@ var ENTER_KEY = 13;
 		// app, we set a direct reference on the model for convenience.
 		initialize: function(options) {
 			
-			// Update view when model changes, e.g. ?
-			this.model.on('change', this.render, this, 0);  // zoom_factor is 0 to indicate no change
+			// Update view when model changes, e.g. after editing text.
+			this.model.on('change', this.render, this);
 			this.model.on('destroy', this.remove, this);
 			
-			var dispatcher = options.dispatcher;
-			dispatcher.on('wallClick', this.finishEditing, this);
-			dispatcher.on('zoomMarks', this.zoom, this);
+			this.dispatcher = options.dispatcher;
+			this.dispatcher.on('wallClick', this.finishEditing, this);
+			this.dispatcher.on('zoomMarks', this.zoom, this);
 			
+			this.abs_factor = options.abs_factor;
 		},
 
 		// Render the mark.
-		render: function(abs_factor) {
+		render: function() {
 		    
 		    var view = this;
+//		    alert(Math.round(this.model.get('x') / this.abs_factor));
 			this.$el.html( this.template( this.model.toJSON() ) )
-			        .offset({ left: this.model.get('x'), top: this.model.get('y') })
+			        .offset({ left: this.model.get('x') * this.abs_factor,
+			                  top: this.model.get('y') * this.abs_factor })
 			        .draggable({
 			            start: function() {
 			                $(this).addClass('dragged')
 			                       .find('.destroy').css('opacity', 0);
 			            },
-			            stop: function() { view.updateLocation(); }
+			            stop: function() {
+			                view.updateLocation();
+			            }
 			         });
 			
-			if(abs_factor) this.zoomSize(abs_factor);
+			this.zoomSize();  // Need to call every time?
             this.shrinkwrap();
 			return this;
 		},
 		
-		zoomSize: function(abs_factor) {
+		zoomSize: function() {
 		    
 		    // Adjust width.
-            this.$('.labelBlock').css('width', abs_factor * ORIG_MAX_WIDTH);
+            this.$('.labelBlock').css('width', this.abs_factor * ORIG_MAX_WIDTH);
             
             // Adjust font size.
-		    var new_size = abs_factor * PRIMARY_FONT_SIZE;
+		    var new_size = this.abs_factor * PRIMARY_FONT_SIZE;
 		    var css = { 'font-size'  : new_size + 'px',
 		                'line-height': new_size * FONT_SIZE_TO_LINE_HEIGHT + 'px' };
 		    this.$('label').css(css);
 		    this.$('.destroy').css(css);  // Assumes destroy font is same size as label font.
-		    
+		    this.$('.bullet').css(css);
 		},
 		
-		zoom: function(rel_factor, abs_factor, new_width, new_height) {
+		zoom: function(abs_factor, new_width, new_height) {
+            
+            this.abs_factor = abs_factor;
             
             var pos = this.$el.offset();
             var new_x = new_width * ( pos.left / $('#wall').width() );
             var new_y = new_height * ( pos.top / $('#wall').height() );
             this.$el.offset({ left: new_x, top: new_y });
             
-            this.zoomSize(abs_factor);
+            this.zoomSize();
             this.shrinkwrap();
-            
 		},
 		
 		// Shrinkwrap labelBlock around label.
 		shrinkwrap: function() {
 			var labelWidth = this.$('label').width();
 			this.$('.labelBlock').width(labelWidth + LABEL_PADDING);
-			this.$el.width(labelWidth + this.$('.destroy').width() + MARK_PADDING);
+			this.$el.width(labelWidth + this.$('.destroy').width() + this.abs_factor * MARK_PADDING);
 		},
 		
 		showX: function(e) {
 		    
 		    if(!e.which) {  // Only show X if mouse is up (not dragging).
 		        
-		        var $mark = this.$el;
 		        var $x = this.$('.destroy');
-		        
 		        $x.css('opacity', 1);
-		        
+		        var $mark = this.$el;
 		        $mark.on('mouseleave', function() {
 		            $x.css('opacity', 0);
 		            $mark.unbind('mouseleave');
 		        });
 		    
 		    }
-		    
 		},
 		
 		updateLocation: function() {
 		    var loc = this.$el.offset();
-		    this.model.save({ x: loc.left, y: loc.top });
+		    this.model.save({ x: loc.left / this.abs_factor,
+		                      y: loc.top / this.abs_factor });
 		},
 		
-		stopPropagation: function(e) {
+		cleanup: function(e) {
 		    e.stopPropagation();
+		    this.dispatcher.trigger('wallClick', e);
+		    this.$el.removeClass('dragged');
 		},
 
 		// Switch this view into 'editing' mode, displaying the input field.
 		edit: function(e) {
 		    
 		    var $mark = this.$el;
-		    
 		    if($mark.hasClass('dragged')) {
 		        $mark.removeClass('dragged');
 		    } else {
-		        this.$('.input').show()
+		        this.$('.input').css('font-size', this.abs_factor * PRIMARY_FONT_SIZE)
+		                        .width(this.abs_factor * ORIG_INPUT_WIDTH)
+		                        .show()
+		                        .autoGrow()
 		                        .focus()
-		                        .val(this.model.get('text'));
+		                        .val(this.model.get('text'))
+		                        .height($mark.height());
 		    }
-		    
 		},
 		
 		// Close the 'editing' mode, saving changes to the mark.
@@ -158,15 +167,12 @@ var ENTER_KEY = 13;
 			        }
 			    
 			    }
-			    
 		},
 
 		// Remove the item, destroy the model from *localStorage* and delete its view.
 		clear: function(e) {
-		    
-		    e.stopImmediatePropagation();
+		    e.stopImmediatePropagation();  // Or just normal stopProp?
 			this.model.destroy();
-			
 		},
 		
 	});
