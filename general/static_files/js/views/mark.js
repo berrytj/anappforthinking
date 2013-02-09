@@ -7,8 +7,7 @@ var MARK_PADDING = 40;
 var PRIMARY_FONT_SIZE = 14;
 var ORIG_MAX_WIDTH = 370;
 var ORIG_INPUT_WIDTH = 380;
-var FONT_SIZE_TO_LINE_HEIGHT = 1.43;
-var ENTER_KEY = 13;
+var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
 
 (function() {
     
@@ -45,12 +44,11 @@ var ENTER_KEY = 13;
 			
 			this.abs_factor = options.abs_factor;
 		},
-
+        
 		// Render the mark.
 		render: function() {
 		    
 		    var view = this;
-//		    alert(Math.round(this.model.get('x') / this.abs_factor));
 			this.$el.html( this.template( this.model.toJSON() ) )
 			        .offset({ left: this.model.get('x') * this.abs_factor,
 			                  top: this.model.get('y') * this.abs_factor })
@@ -64,23 +62,29 @@ var ENTER_KEY = 13;
 			            }
 			         });
 			
+//			this.shrinkwrap();
 			this.zoomSize();  // Need to call every time?
-            this.shrinkwrap();
 			return this;
 		},
 		
 		zoomSize: function() {
 		    
-		    // Adjust width.
-            this.$('.labelBlock').css('width', this.abs_factor * ORIG_MAX_WIDTH);
+		    this.$('.labelBlock').css('width', this.abs_factor * ORIG_MAX_WIDTH);
+		    
+		    var labelCSS = { };
+		    
+		    if(this.abs_factor < 1) {
+		        labelCSS['font-family'] = 'HelveticaNeue';
+		    } else {
+		        labelCSS['font-family'] = 'HelveticaNeue-Light';
+		    }
+		    
+		    labelCSS['font-size'] = this.abs_factor * PRIMARY_FONT_SIZE + 'px';
             
-            // Adjust font size.
-		    var new_size = this.abs_factor * PRIMARY_FONT_SIZE;
-		    var css = { 'font-size'  : new_size + 'px',
-		                'line-height': new_size * FONT_SIZE_TO_LINE_HEIGHT + 'px' };
-		    this.$('label').css(css);
-		    this.$('.destroy').css(css);  // Assumes destroy font is same size as label font.
-		    this.$('.bullet').css(css);
+		    this.$('label').css(labelCSS);
+		    this.$('.destroy').css(labelCSS);  // Assumes destroy font is same size as label font.
+		    
+		    this.shrinkwrap();
 		},
 		
 		zoom: function(abs_factor, new_width, new_height) {
@@ -90,14 +94,16 @@ var ENTER_KEY = 13;
             var pos = this.$el.offset();
             var new_x = new_width * ( pos.left / $('#wall').width() );
             var new_y = new_height * ( pos.top / $('#wall').height() );
-            this.$el.offset({ left: new_x, top: new_y });
             
             this.zoomSize();
-            this.shrinkwrap();
+            
+            this.$el.animate({ left: new_x, top: new_y },
+                             { duration: TIME, queue:false });
 		},
 		
 		// Shrinkwrap labelBlock around label.
 		shrinkwrap: function() {
+		    
 			var labelWidth = this.$('label').width();
 			this.$('.labelBlock').width(labelWidth + LABEL_PADDING);
 			this.$el.width(labelWidth + this.$('.destroy').width() + this.abs_factor * MARK_PADDING);
@@ -120,18 +126,25 @@ var ENTER_KEY = 13;
 		
 		updateLocation: function() {
 		    var loc = this.$el.offset();
+		    this.createUndo();
 		    this.model.save({ x: loc.left / this.abs_factor,
 		                      y: loc.top / this.abs_factor });
 		},
 		
 		cleanup: function(e) {
 		    e.stopPropagation();
-		    this.dispatcher.trigger('wallClick', e);
+		    
+		    // FIX THIS: this closes editing when a mark is clicked,
+		    // but even closes the mark you're currently editing / clicking.
+//		    this.dispatcher.trigger('wallClick', e);
+            
 		    this.$el.removeClass('dragged');
 		},
 
 		// Switch this view into 'editing' mode, displaying the input field.
 		edit: function(e) {
+		    
+		    alert(this.$('label').css('line-height'));
 		    
 		    var $mark = this.$el;
 		    if($mark.hasClass('dragged')) {
@@ -160,7 +173,10 @@ var ENTER_KEY = 13;
 			        var text = $input.val().trim();
 			        
 			        if(text) {
-			            this.model.save({ text:text });
+			            if(this.model.get('text') !== text) {
+			                this.createUndo();
+			                this.model.save({ text:text });
+			            }
 			            $input.hide();
 			        } else {
 			            this.clear();
@@ -168,10 +184,22 @@ var ENTER_KEY = 13;
 			    
 			    }
 		},
-
+		
+		createUndo: function() {
+		    // When generalizing for waypoints, send model to app.js for undo creation?
+		    // Quicker way to transfer multiple attributes?
+            app.Undos.create({ wall: WALL_URL,
+			                   obj_pk: this.model.get('x'),
+			                   type: 'mark',
+			                   x: this.model.get('x'),
+			                   y: this.model.get('y'),
+			                   text: this.model.get('text') });
+		},
+		
 		// Remove the item, destroy the model from *localStorage* and delete its view.
 		clear: function(e) {
 		    e.stopImmediatePropagation();  // Or just normal stopProp?
+//			undo, and don't actually destroy
 			this.model.destroy();
 		},
 		

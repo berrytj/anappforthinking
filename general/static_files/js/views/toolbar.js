@@ -2,8 +2,6 @@
 // ------------
 
 var app = app || {};
-var ZOOM_OUT_FACTOR = 0.85;
-var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
 
 (function() {
     
@@ -16,10 +14,8 @@ var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
 		// The DOM events specific to an item.
 		events: {
 		    'mousedown': 'doNothing',
-		    'click #zoom-out':    'zoomOut',
-		    'click #zoom-in':     'zoomIn',
-//		    'click #undo-button': 'undo',
-//		    'click #redo-button': 'redo',
+		    'click #undo-button': 'undo',
+		    'click #redo-button': 'redo',
 		},
 		
 		initialize: function(options) {
@@ -27,24 +23,11 @@ var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
 		    this.dispatcher = options.dispatcher;
 		    var d = this.dispatcher;
 		    
-		    $("#zoom-slider").slider({ animate: 'slow',
-                                       min: 0,
-                                       max: 10,
-                                       step: 1,
-                                       slide: function(e, ui) {
-                                           d.trigger('zoom', ui.value);
-                                       }
-            });
 		},
 		
-		zoomOut: function() { this.zoom(ZOOM_OUT_FACTOR); },
-		zoomIn:  function() { this.zoom(ZOOM_IN_FACTOR);  },
-		
-		zoom: function(factor) { this.dispatcher.trigger('zoom', factor); },
-		
-//		undo:    function() { this.dispatcher.trigger('zoomIn');  },
-//		redo:    function() { this.dispatcher.trigger('zoomIn');  },
-        		
+		undo: function() { this.dispatcher.trigger('undo');  },
+		redo: function() { this.dispatcher.trigger('redo');  },
+        	
 		doNothing: function(e) { e.stopPropagation(); }
 		
 	});

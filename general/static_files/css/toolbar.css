@@ -68,9 +68,13 @@
 }
 
 #zoom-slider {
+    position:relative;
     margin-left:48%;
     width:15%;
     margin-top:3px;
+}
+
+.ui-slider-handle {
 }
 
 #zoom-in { margin-left:67%; }

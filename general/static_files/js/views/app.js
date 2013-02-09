@@ -4,8 +4,13 @@
 
 var app = app || {};
 var ENTER_KEY = 13;
+var UP_KEY = 38;
+var DOWN_KEY = 40;
 var API_NAME = '/api/v1';
 var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
+var ZOOM_OUT_FACTOR = 0.8;
+var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
+var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is too distracting.
 
 (function() {
     
@@ -20,9 +25,10 @@ var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 
 		// Delegated events for creating new items, and clearing completed ones.
 		events: {
-			'mousedown':  'toggleInput',
+			'mousedown':        'toggleInput',
 			'mousedown #input': 'doNothing',
-			'keypress #input':  'createMark'
+			'keypress #input':  'createMark',
+			'keydown':          'checkForZoom',
 		},
 
 		// At initialization we bind to the relevant events on the `Marks`
@@ -35,40 +41,87 @@ var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 			
 			// Keep track of absolute zoom factor:
 			this.abs_factor = 1;
+			this.keyDown = false;
 			
 			window.app.Marks.on('add', this.addOne, this);
 			window.app.Marks.on('reset', this.addAll, this);
 			
 			this.dispatcher.on('zoom', this.zoom, this);
 			this.dispatcher.on('wallClick', this.hideInput, this);
+			this.dispatcher.on('undo', this.undo, this);
+			this.dispatcher.on('redo', this.redo, this);
 			
 			// Fetching calls 'reset' on Marks collection.
 			app.Marks.fetch({ data: { wall__id: wall_id, limit: 0 } });
+			app.Undos.fetch({ data: { wall__id: wall_id, limit: 0 } });
+			app.Redos.fetch({ data: { wall__id: wall_id, limit: 0 } });
 			
 			var toolbar = new app.ToolbarView({ dispatcher: this.dispatcher });
 		},
 		
-		zoom: function(slider_value) {
+		undo: function() {
 		    
-		    var new_abs_factor = Math.pow(12, 2);
-/*		    
-		    var new_width = $('#wall').width()*rel_factor;
-            var new_height = $('#wall').height()*rel_factor;
+		    var undo = app.Undos.pop();
+		    console.log(undo.get('type'));
+		    
+		    //create redo
+		},
+		
+		redo: function() {
+		    
+		    var redo = app.Redos.pop();
+		    console.log(redo.get('type'));
+		    
+		    //create undo
+		},
+		
+		checkForZoom: function(e) {
+		    
+		    if(!this.keyDown) {  // Prevent multiple zooms from holding down arrow keys.
+		        
+		        this.keyDown = true;
+		        
+		        var view = this;
+		        $(window).keyup(function() {
+		            view.keyDown = false;
+		            $(window).unbind('keyup');
+		        });
+		        
+		        var rel_factor;
+		        if(e.which === UP_KEY) {
+		            e.preventDefault();
+		            rel_factor = ZOOM_IN_FACTOR;
+		            this.zoom(rel_factor);
+		        } else if(e.which === DOWN_KEY) {
+		            e.preventDefault();
+		            rel_factor = ZOOM_OUT_FACTOR;
+		            this.zoom(rel_factor);
+		        }
+		        
+		    } else if(e.which === UP_KEY || e.which === DOWN_KEY) {
+		        e.preventDefault();  // Prevent arrow keys from panning the window up and down.
+		    }
+		},
+		
+		zoom: function(rel_factor) {
+		    
+		    var new_width = $('#wall').width() * rel_factor;
+            var new_height = $('#wall').height() * rel_factor;
             
-            if(new_width > $(window).width() && new_height > $(window).height()) {
+            if( new_width  > $(window).width() &&
+                new_height > $(window).height() ) {
                 
                 this.abs_factor *= rel_factor;
                 
                 if(rel_factor < 1) this.correctWindowLocationForZoom(rel_factor);
-                         
+                
                 this.dispatcher.trigger('zoomMarks', this.abs_factor, new_width, new_height);
                 
-		        $('#wall').height(new_height);
-		        $('#wall').width(new_width);
-		        
+                $('#wall').animate({ width: new_width }, { duration:TIME, queue:false });
+                $('#wall').animate({ height: new_height }, { duration:TIME, queue:false });
+                
 		        if(rel_factor > 1) this.correctWindowLocationForZoom(rel_factor);
-		        
-		    }*/
+		    }
 		    
 //		    if(this.abs_factor * rel_factor * rel_factor < MIN_ZOOM)  grayoutzoomoutbutton;
 		},
@@ -79,11 +132,13 @@ var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
             
             var current_x_center = $w.scrollLeft() + $w.width()/2;
             var new_x_center = rel_factor * current_x_center;
-            $w.scrollLeft(new_x_center - $w.width()/2);
+            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 },
+                                    { duration:TIME, queue:false });
             
             var current_y_center = $w.scrollTop() + $w.height()/2;
             var new_y_center = rel_factor * current_y_center;
-            $w.scrollTop(new_y_center - $w.height()/2);
+            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 },
+                                    { duration:TIME, queue:false });
         },
         
 		// Add a single mark to the set by creating a view for it, and
@@ -148,11 +203,12 @@ var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 			    
 			    if(text) {
 			        var loc = $input.offset();
-			        var new_mark_model = app.Marks.create( { wall: WALL_URL,
-			                                                 x: loc.left / this.abs_factor,
-			                                                 y: loc.top / this.abs_factor,
-			                                                 text: text },
-			                                               { wait: true } );  // Wait so rendered mark gets id from server.
+			        var attributes = { wall: WALL_URL,
+			                           x: loc.left / this.abs_factor,
+			                           y: loc.top / this.abs_factor,
+			                           text: text };
+			        // 'Wait: true' so rendered mark gets id from server. Necessary?
+			        var new_mark_model = app.Marks.create(attributes, { wait: true });
 			        $input.val('');
 			    }
 			    

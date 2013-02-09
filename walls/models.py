@@ -44,12 +44,17 @@ class Waypoint(models.Model):
 class Undo(models.Model):
     '''A snapshot of a mark or waypoint containing the pk of its corresponding live object.'''
     
-    wall = models.ForeignKey(Wall) # Probably not necessary since you have the mark/waypoint pk
+    # Needed so you can create the right undo stack:
+    wall = models.ForeignKey(Wall)
+    
+    # Needed (rather than ForeignKey) so you can include marks, waypoints, etc:
     obj_pk = models.IntegerField()
+    type = models.CharField(max_length=50)
+    
     text = models.CharField(max_length=10000, default="", blank=True)
     x = models.IntegerField(default=0)
     y = models.IntegerField(default=0)
-    type = models.CharField(max_length=50)
+    
     def __unicode__(self):
         return str(self.pk)
     class Meta:
@@ -61,10 +66,10 @@ class Redo(models.Model):
     
     wall = models.ForeignKey(Wall)
     obj_pk = models.IntegerField()
+    type = models.CharField(max_length=50)
     text = models.CharField(max_length=10000, default="", blank=True)
     x = models.IntegerField(default=0)
     y = models.IntegerField(default=0)
-    type = models.CharField(max_length=50)
     def __unicode__(self):
         return str(self.pk)
     class Meta:

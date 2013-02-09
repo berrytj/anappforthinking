@@ -1,25 +1,30 @@
 body {
-    font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
-	line-height: 1.4em; /* affects toolbar, fix */
+    font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+/*	line-height: 1.4em; /* affects toolbar, fix */
     color: #3d3d3d;
+}
+
+/* Use if you decide background image zooming is too jarring. */
+#background {
+    position:fixed;
+    width:100%;
+    height:100%;
     background-color: #DDDDDD;
-    background-image: url('../images/4.jpg'); /* From subtlepatterns.com */
-/*    background-image: url('../images/whitey.png'); /* From subtlepatterns.com */
+    background-image: url('../images/4.jpg');
 }
 
 #wall {
+    position:absolute;
     width:5000px;
     height:3000px;
+    background-image: url('../images/4.jpg');
+    background-size:10% 10%;
 }
 
 .input {
     position:absolute;
     display:none;
     width:380px;
-    /*add padding so editing text doesn't move it.
-    can you do with zoom? maybe it only has to work at
-    normal zoom. */
-    
     padding:0px 13px 2px 11px;
     margin-top:-1px;
 	height:auto;
@@ -28,19 +33,28 @@ body {
 	z-index:10000;
 }
 
-.mark { position:absolute; }
+.mark {
+    position:absolute;
+}
 
-label { display:inline; }
+label {
+    display:inline;
+    white-space:pre-wrap;
+    line-height:140%;
+}
 
 .labelBlock {
     display:inline-block;
     width:370px;
     cursor:pointer;
+    line-height:0px;
 }
 
 .bullet {
+    position:relative;
+    vertical-align:top;
+    top:-1px;
 	display:inline-block;
-	vertical-align:top;
 	color:#666666;
 }
 
