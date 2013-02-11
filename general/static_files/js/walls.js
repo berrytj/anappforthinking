@@ -8,7 +8,7 @@ $(function() {
     $('.input').autoGrow();
     $('#trash-can').droppable({
         drop: function(e, ui) {
-            console.log(ui.draggable.view);
+            ui.draggable.data('view').clear();
         }
     });
     

@@ -27,6 +27,8 @@ var app = app || {};
 			this.model.on('destroy', this.remove, this);
 			
 			app.dispatcher.on('zoomObjects', this.zoom, this);
+			
+			this.$el.data('view', this);
 		},
         
 		// Render the mark.
@@ -109,8 +111,7 @@ var app = app || {};
 			                      y: this.model.get('y') });
 		},
 		
-		clear: function(e) {
-		    e.stopImmediatePropagation();  // Or just normal stopProp?
+		clear: function() {
 		    this.createUndo();
 		    this.model.save({ text: '' });
 		},
