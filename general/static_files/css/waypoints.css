@@ -17,7 +17,7 @@
 	border:1px solid red;
 }
 
-#w-input {
+#waypoint-input {
 	border:0px solid black;
 	cursor:text;
 	resize:none;
@@ -40,9 +40,10 @@
 	overflow:auto;
 	overflow-y:hidden;
 	z-index:0;
+	border:1px dotted blue;
 }
 
-#hide-waypoint-tags {
+#hide-tags {
 	float:left;
 	margin:0px 0px 0px -6px;
 	padding:4px 7px 6px 3px;
@@ -50,21 +51,29 @@
 	color:#777777;
 	cursor:pointer;
 	text-shadow:2px 3px 3px rgba(0,0,0,0.4);
-	z-index:100002;
+	z-index:20003;
+	border:1px dotted red;
 }
 
-.wp-tag {
+.waypoint-tag {
 	float:left;
 	cursor:pointer;
+	
 	padding:6px 10px;
 	margin-right:10px;
-	border-radius:4px;
-	box-shadow:inset 1px 1px 1px rgba(0,0,0,0.4), 1px 1px 1px rgba(255,255,255,1);
-	text-shadow:1px 1px 0px rgba(255,255,255,1);
+	
 	font-size:14px;
 	font-weight:bold;
 	color:#666666;
-	background-image:url("images/darknoise.png");
+	
+	text-shadow:1px 1px 0px rgba(255,255,255,1);
 	box-shadow:2px 3px 3px rgba(0,0,0,0.3);
-	z-index:100002;
+	border-radius:4px;
+	
+	background-image:url("images/darknoise.png");
+	background-color:#CCCCCC;
+	
+	z-index:20003;
+	
+	border:1px dotted green;
 }

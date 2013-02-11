@@ -4,15 +4,6 @@ body {
     color: #3d3d3d;
 }
 
-/* Use if you decide background image zooming is too jarring. */
-#background {
-    position:fixed;
-    width:100%;
-    height:100%;
-    background-color: #DDDDDD;
-    background-image: url('../images/4.jpg');
-}
-
 #wall {
     position:absolute;
     width:5000px;

@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ wall.title }}{% endblock %}
 {% block style %}
-<!--    <link href="{{STATIC_URL}}css/walls.css" rel="stylesheet">-->
+    <link href="{{STATIC_URL}}css/wall.css" rel="stylesheet">
+    <link href="{{STATIC_URL}}css/toolbar.css" rel="stylesheet">
+    <link href="{{STATIC_URL}}css/waypoints.css" rel="stylesheet">
 {% endblock %}
 {% block body %}
     
@@ -16,12 +18,17 @@
         </div>
     </div>
 	
-	<div id='background'></div>
 	
 	<div id='wall'>
 	    <textarea id='input' class='input'></textarea>
-	    <textarea id="w-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
+	    <textarea id="waypoint-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
 	</div>
+	
+	
+	<div id="waypoint-tags">
+		<span id="add-waypoint" class="waypoint-tag"> + </span>
+		<span id="hide-tags">&laquo;</span>
+    </div>
 	
 	
 	<script type='text/template' id='mark-template'>
@@ -36,11 +43,7 @@
 		<button class='destroy'>x</button>
 		
 	</script>
-    
-	<div id="waypoint-tags">
-		<span id="add-waypoint" class="wp-tag"> + </span>
-		<span id="hide-waypoint-tags">&laquo;</span>
-    </div>
+	
 <!--    
 	{% for wp in wall.waypoint_set.all %}
 		{% if wp.text|length %}
@@ -60,12 +63,13 @@ var wall_id = "{{ wall.id }}";
 {% block scripts %}
 
 <script src="{{STATIC_URL}}js/models/tastypie.js"></script>
-<script src="{{STATIC_URL}}js/models/mark.js"></script>
+<script src="{{STATIC_URL}}js/models/models.js"></script>
 <script src="{{STATIC_URL}}js/collections/tastypie.js"></script>
-<script src="{{STATIC_URL}}js/collections/marks.js"></script>
+<script src="{{STATIC_URL}}js/collections/collections.js"></script>
 <script src="{{STATIC_URL}}js/views/app.js"></script>
 <script src="{{STATIC_URL}}js/views/mark.js"></script>
 <script src="{{STATIC_URL}}js/views/toolbar.js"></script>
+<script src="{{STATIC_URL}}js/views/waypoint-tags.js"></script>
 <script src="{{STATIC_URL}}js/walls.js"></script>
 
 {% endblock %}

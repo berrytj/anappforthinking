@@ -6,11 +6,13 @@ var app = app || {};
 var ENTER_KEY = 13;
 var UP_KEY = 38;
 var DOWN_KEY = 40;
-var API_NAME = '/api/v1';
 var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
-var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is too distracting.
+var TIME = 100;  // Go slower if you can make font size animation less choppy.
+var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
+// Get items for this wall only; don't limit quantity returned (default is 20):
+var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 
 (function() {
     
@@ -25,10 +27,13 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 
 		// Delegated events for creating new items, and clearing completed ones.
 		events: {
-			'mousedown':        'toggleInput',
+			       'mousedown': 'toggleInput',
 			'mousedown #input': 'doNothing',
-			'keypress #input':  'createMark',
-			'keydown':          'checkForZoom',
+			 'keypress #input': 'createMark',
+	'keypress #waypoint-input': 'createWaypoint',
+			         'keydown': 'checkForZoom',
+			         // keypress in waypoint-input
+			         // stopprop for tags just like for toolbar
 		},
 
 		// At initialization we bind to the relevant events on the `Marks`
@@ -38,41 +43,90 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 			
 			this.input = this.$('#input');
 			this.dispatcher = _.extend({}, Backbone.Events);
-			
-			// Keep track of absolute zoom factor:
-			this.abs_factor = 1;
+			// Keep track of zoom factor:
+			this.factor = 1;
 			this.keyDown = false;
 			
-			window.app.Marks.on('add', this.addOne, this);
+			this.dispatcher.on('zoom', this.zoom, this);
+			this.dispatcher.on('undo', this.undo, this);
+			this.dispatcher.on('wallClick', this.hideInput, this);
+			
+			// Does calling window before app change anything?
+			window.app.Marks.on('add',   this.addOne, this);
 			window.app.Marks.on('reset', this.addAll, this);
 			
-			this.dispatcher.on('zoom', this.zoom, this);
-			this.dispatcher.on('wallClick', this.hideInput, this);
-			this.dispatcher.on('undo', this.undo, this);
-			this.dispatcher.on('redo', this.redo, this);
+			window.app.Waypoints.on('add',   this.addOne, this);
+			window.app.Waypoints.on('reset', this.addAll, this);
 			
 			// Fetching calls 'reset' on Marks collection.
-			app.Marks.fetch({ data: { wall__id: wall_id, limit: 0 } });
-			app.Undos.fetch({ data: { wall__id: wall_id, limit: 0 } });
-			app.Redos.fetch({ data: { wall__id: wall_id, limit: 0 } });
+			app.Marks.fetch(FETCH_OPTS);
+			app.Waypoints.fetch(FETCH_OPTS);
+			app.Undos.fetch(FETCH_OPTS);
+			app.Redos.fetch(FETCH_OPTS);
 			
 			var toolbar = new app.ToolbarView({ dispatcher: this.dispatcher });
+			var waypoint_tags = new app.WaypointTagsView({ dispatcher: this.dispatcher });
+			
+/*			function undoKeys() {
+	$(document).keydown(function(e) {
+		if(e.which === 90 && e.metaKey && e.shiftKey) {
+			performUndo("redo");
+		} else if(e.which === 90 && e.metaKey) {
+			performUndo("undo");
+		}
+	});
+}*/
+			
+			
 		},
 		
-		undo: function() {
+		undo: function(isRedo) {
 		    
-		    var undo = app.Undos.pop();
-		    console.log(undo.get('type'));
+		    var prev, other;
+		    if(isRedo) {
+		        prev = app.Redos.pop();
+		        other = app.Undos;
+		    } else {
+		        prev = app.Undos.pop();
+		        other = app.Redos;
+		    }
 		    
-		    //create redo
-		},
-		
-		redo: function() {
-		    
-		    var redo = app.Redos.pop();
-		    console.log(redo.get('type'));
-		    
-		    //create undo
+		    if(prev) {
+		        
+		        //decompose this once you add waypoint undos
+		        if(prev.get('type') === 'mark') {
+		            
+		            var mark_id = prev.get('obj_pk');
+		            var mark = app.Marks.get(mark_id);
+		            
+		            other.create({ wall: WALL_URL,
+                                   type: 'mark',
+			                     obj_pk: mark.get('id'),
+			                       text: mark.get('text'),
+			                          x: mark.get('x'),
+			                          y: mark.get('y') });
+		            
+		            var view = this;
+		            mark.save({ text: prev.get('text'),
+		                           x: prev.get('x'),
+		                           y: prev.get('y') },
+		                      { success:function() {
+		                                    // Trigger here because save took longest
+		                                    // in trials, but check for create/destroy
+		                                    // to complete as well to be extra safe?
+		                                    view.dispatcher.trigger('undoComplete');
+		                      }});
+		            
+		            prev.destroy();
+		            
+		        } else if(prev.get('type') === 'waypoint') {
+		            //
+		        }
+		        
+            } else {
+                this.dispatcher.trigger('undoComplete');
+            }
+            
 		},
 		
 		checkForZoom: function(e) {
@@ -87,6 +141,7 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 		            $(window).unbind('keyup');
 		        });
 		        
+		        // Determine relative zoom factor:
 		        var rel_factor;
 		        if(e.which === UP_KEY) {
 		            e.preventDefault();
@@ -105,55 +160,58 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 		
 		zoom: function(rel_factor) {
 		    
-		    var new_width = $('#wall').width() * rel_factor;
+		    // Calculate new page size:
+		    var new_width  = $('#wall').width()  * rel_factor;
             var new_height = $('#wall').height() * rel_factor;
             
+            // Don't shrink page below window size:
             if( new_width  > $(window).width() &&
                 new_height > $(window).height() ) {
                 
-                this.abs_factor *= rel_factor;
+                // Update absolute zoom factor:
+                this.factor *= rel_factor;
                 
-                if(rel_factor < 1) this.correctWindowLocationForZoom(rel_factor);
-                
-                this.dispatcher.trigger('zoomMarks', this.abs_factor, new_width, new_height);
-                
-                $('#wall').animate({ width: new_width }, { duration:TIME, queue:false });
-                $('#wall').animate({ height: new_height }, { duration:TIME, queue:false });
-                
-		        if(rel_factor > 1) this.correctWindowLocationForZoom(rel_factor);
+                // Zoom marks and zoom page.
+                this.dispatcher.trigger('zoomMarks', this.factor, new_width, new_height);
+                this.resizePage(new_width, new_height);
+		        this.recenterWindow(rel_factor);
+		        
 		    }
-		    
-//		    if(this.abs_factor * rel_factor * rel_factor < MIN_ZOOM)  grayoutzoomoutbutton;
+		},
+		
+		resizePage: function(new_width, new_height) {
+		    $('#wall').animate({ width:  new_width  }, ANIM_OPTS);
+            $('#wall').animate({ height: new_height }, ANIM_OPTS);
 		},
         
-        correctWindowLocationForZoom: function(rel_factor) {
+        recenterWindow: function(rel_factor) {
+            // Page grows/shrinks from right and bottom, so page needs to be recentered.
             
             var $w = $(window);
-            
+            // Page movement needs to be calibrated from page center,
+            // rather than top-left:
             var current_x_center = $w.scrollLeft() + $w.width()/2;
             var new_x_center = rel_factor * current_x_center;
-            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 },
-                                    { duration:TIME, queue:false });
+            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 }, ANIM_OPTS);
             
             var current_y_center = $w.scrollTop() + $w.height()/2;
             var new_y_center = rel_factor * current_y_center;
-            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 },
-                                    { duration:TIME, queue:false });
+            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 }, ANIM_OPTS);
         },
         
-		// Add a single mark to the set by creating a view for it, and
-		// appending its element to the 'wall'.
-		addOne: function(mark) {
-		    
-			var view = new app.MarkView({ model: mark,
-			                              dispatcher: this.dispatcher,
-			                              abs_factor: this.abs_factor });
+		addOne: function(model) {
+		    var attributes = { model: model,
+			                   factor: this.factor,
+			                   dispatcher: this.dispatcher };
+			var view;
+			if(model.type === 'mark') view = new app.MarkView(attributes);
+			else if(model.type === 'waypoint') view = new app.WaypointView(attributes);
 			$('body').append(view.el);
 			view.render();
 		},
-
-		// Add all items in the **Marks** collection at once.
+		
 		addAll: function() {
+		    // Add all items in the **Marks** collection at once.
 			app.Marks.each(this.addOne, this);
 		},
 		
@@ -177,8 +235,8 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 		    // If no input fields are open:
 		    } else {
 		        
-		        $input.css('font-size', this.abs_factor * PRIMARY_FONT_SIZE)
-		              .width(this.abs_factor * ORIG_INPUT_WIDTH)
+		        $input.css('font-size', this.factor * PRIMARY_FONT_SIZE)
+		              .width(this.factor * ORIG_INPUT_WIDTH)
 		              .show()
 		              .offset({ left: e.pageX, top: e.pageY });
 		        
@@ -204,15 +262,34 @@ var TIME = 100;  // Faster and it's not as smooth; slower and text wrapping is t
 			    if(text) {
 			        var loc = $input.offset();
 			        var attributes = { wall: WALL_URL,
-			                           x: loc.left / this.abs_factor,
-			                           y: loc.top / this.abs_factor,
-			                           text: text };
-			        // 'Wait: true' so rendered mark gets id from server. Necessary?
-			        var new_mark_model = app.Marks.create(attributes, { wait: true });
+			                           text: text,
+			                              x: loc.left / this.factor,
+			                              y: loc.top  / this.factor };
+			        app.Marks.create(attributes);
 			        $input.val('');
 			    }
 			    
 			    $input.hide();
+		},
+		
+		createWaypoint: function(e) {
+		    //merge with createmark
+		    var $w = this.$('#waypoint-input');
+		    if(e.which === ENTER_KEY) {
+		        var text = $w.val().trim();
+		        if(text) {
+		            var pos = $w.offset();
+		            app.Waypoints.create({ wall: WALL_URL,
+		                                   text: text,
+		                                   x: pos.left,
+		                                   y: pos.top });
+		            
+		            });
+		            $w.val('');
+		        }
+		        $w.hide();
+		    }
+		    
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); }

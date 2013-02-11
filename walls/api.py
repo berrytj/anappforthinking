@@ -40,3 +40,39 @@ class MarkResource(ModelResource):
             'id': ALL,
             'wall': ALL_WITH_RELATIONS,
         }
+
+class WaypointResource(ModelResource):
+    wall = fields.ForeignKey(WallResource, 'wall')
+    
+    class Meta:
+        queryset = Waypoint.objects.all()
+        authorization = Authorization()
+        always_return_data = True
+        filtering = {
+            'id': ALL,
+            'wall': ALL_WITH_RELATIONS,
+        }
+
+class UndoResource(ModelResource):
+    wall = fields.ForeignKey(WallResource, 'wall')
+    
+    class Meta:
+        queryset = Undo.objects.all()
+        authorization = Authorization()
+        always_return_data = True
+        filtering = {
+            'id': ALL,
+            'wall': ALL_WITH_RELATIONS,
+        }
+
+class RedoResource(ModelResource):
+    wall = fields.ForeignKey(WallResource, 'wall')
+    
+    class Meta:
+        queryset = Redo.objects.all()
+        authorization = Authorization()
+        always_return_data = True
+        filtering = {
+            'id': ALL,
+            'wall': ALL_WITH_RELATIONS,
+        }

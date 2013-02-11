@@ -6,13 +6,18 @@ admin.autodiscover()
 
 from django.conf.urls.defaults import *
 from tastypie.api import Api
-from walls.api import WallResource, MarkResource, UserResource
+from walls.api import ( WallResource, MarkResource, WaypointResource,
+                        UserResource, UndoResource, RedoResource )
 
 
 v1_api = Api(api_name='v1')
 v1_api.register(UserResource())
 v1_api.register(WallResource())
 v1_api.register(MarkResource())
+v1_api.register(WaypointResource())
+v1_api.register(UndoResource())
+v1_api.register(RedoResource())
+
 
 urlpatterns = patterns('',
 	url(r'^admin/', include(admin.site.urls)),

@@ -1,30 +1,18 @@
-// Mark View
-// ---------
+// Object View
+// -------------
 
 var app = app || {};
-var LABEL_PADDING = 3;
-var MARK_PADDING = 40;
-var PRIMARY_FONT_SIZE = 14;
-var ORIG_MAX_WIDTH = 370;
-var ORIG_INPUT_WIDTH = 380;
-var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
 
 (function() {
     
     'use strict';
-    	
-	app.MarkView = Backbone.View.extend({
-	    
-	    className: "mark",
-
-		// Cache the template function for a single mark.
-		template: _.template( $('#mark-template').html() ),
+    
+    // Object descendants include marks and waypoints.
+	app.ObjectView = Backbone.View.extend({
 
 		// The DOM events specific to an item.
 		events: {
 		             'mousedown': 'cleanup',
-		     'click .labelBlock': 'edit',
-		       'keypress .input': 'finishEditing',
 		             'mouseover': 'showX',
 			'mousedown .destroy': 'clear',
 		},
@@ -39,7 +27,6 @@ var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
 			this.model.on('destroy', this.remove, this);
 			
 			this.dispatcher = options.dispatcher;
-			this.dispatcher.on('wallClick', this.finishEditing, this);
 			this.dispatcher.on('zoomMarks', this.zoom, this);
 			
 			// Keep track of zoom factor:
@@ -67,24 +54,6 @@ var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
 			return this;
 		},
 		
-		zoomSize: function() {
-		    
-		    this.$('.labelBlock').css('width', this.factor * ORIG_MAX_WIDTH);
-		    
-		    var labelCSS = { };
-		    
-		    // Below 0.7 or 0.6 add serifs?
-		    if(this.factor < 1) labelCSS['font-family'] = 'HelveticaNeue';
-		    else                labelCSS['font-family'] = 'HelveticaNeue-Light';
-		    
-		    labelCSS['font-size'] = this.factor * PRIMARY_FONT_SIZE + 'px';
-            
-		    this.$('label').css(labelCSS);
-		    this.$('.destroy').css(labelCSS);  // Assumes destroy font is same size as label font.
-		    
-		    this.shrinkwrap();
-		},
-		
 		zoom: function(factor, new_width, new_height) {
             
             this.factor = factor;
@@ -96,13 +65,6 @@ var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
             this.zoomSize();
             
             this.$el.animate({ left: new_x, top: new_y }, ANIM_OPTS);
-		},
-		
-		// Shrinkwrap labelBlock around label.
-		shrinkwrap: function() {
-			var labelWidth = this.$('label').width();
-			this.$('.labelBlock').width(labelWidth + LABEL_PADDING);
-			this.$el.width(labelWidth + this.$('.destroy').width() + this.factor * MARK_PADDING);
 		},
 		
 		showX: function(e) {
@@ -136,54 +98,11 @@ var FONT_SIZE_TO_LINE_HEIGHT = 0.4;
             
 		    this.$el.removeClass('dragged');
 		},
-
-		// Switch this view into 'editing' mode, displaying the input field.
-		edit: function(e) {
-		    
-		    var $mark = this.$el;
-		    if($mark.hasClass('dragged')) {
-		        $mark.removeClass('dragged');
-		    } else {
-		        this.$('.input').css('font-size', this.factor * PRIMARY_FONT_SIZE)
-		                        .width(this.factor * ORIG_INPUT_WIDTH)
-		                        .show()
-		                        .autoGrow()  // Just call once on all '.input' at the beginning?
-		                        .focus()
-		                        .val(this.model.get('text'))
-		                        .height($mark.height());  // Add a little padding on the height?
-		    }
-		},
-		
-		// Close the 'editing' mode, saving changes to the mark.
-		finishEditing: function(e) {
-		        
-		        var $input = this.$('.input');
-		        if($input.is(':visible')) {
-		            
-		            var notClicking = !e.pageX;
-		            var notEnter = !(e.which == ENTER_KEY);
-		            if(notClicking && notEnter) return;
-		            
-			        var text = $input.val().trim();
-			        
-			        if(text) {
-			            if(this.model.get('text') !== text) {
-			                this.createUndo();
-			                this.model.save({ text: text });
-			            }
-			            $input.hide();
-			        } else {
-			            this.clear();
-			        }
-			    
-			    }
-		},
 		
 		createUndo: function() {
-		    // When generalizing for waypoints, send model to app.js for undo creation?
 		    // Quicker way to transfer multiple attributes?
             app.Undos.create({ wall: WALL_URL,
-                               type: 'mark',
+                               type: this.model.type,
 			                 obj_pk: this.model.get('id'),
 			                   text: this.model.get('text'),
 			                      x: this.model.get('x'),
