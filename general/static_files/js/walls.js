@@ -5,9 +5,12 @@ var app = app || {};
 
 $(function() {
     
-    $(".input").autoGrow();
-    
-//    $( "#amount" ).val( "$" + $( "#slider" ).slider( "value" ) );
+    $('.input').autoGrow();
+    $('#trash-can').droppable({
+        drop: function(e, ui) {
+            console.log(ui.draggable.view);
+        }
+    });
     
     // Kick things off by creating the **App**.
 	new app.AppView();

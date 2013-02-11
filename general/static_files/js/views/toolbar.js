@@ -18,24 +18,23 @@ var app = app || {};
 		    'click #redo-button': 'redo',
 		},
 		
-		initialize: function(options) {
-		    this.dispatcher = options.dispatcher;
+		initialize: function() {
 		    this.undoEnabled = true;
-		    this.dispatcher.on('undoComplete', this.enableUndoButtons, this);
+		    app.dispatcher.on('undoComplete', this.enableUndoButtons, this);
 		},
 		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {
 		    if(this.undoEnabled) {
 		        this.undoEnabled = false;
-		        this.dispatcher.trigger('undo', false);
+		        app.dispatcher.trigger('undo', false);
 		    }
 		},
 		
 		redo: function() {
 		    if(this.undoEnabled) {
 		        this.undoEnabled = false;
-		        this.dispatcher.trigger('undo', true);
+		        app.dispatcher.trigger('undo', true);
 		    }
 		},
 		

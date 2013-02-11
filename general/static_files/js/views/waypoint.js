@@ -2,34 +2,50 @@
 // -------------
 
 var app = app || {};
+var WP_WIDTH = 140;
+var WP_FONT_SIZE = 16;
 
 (function() {
     
     'use strict';
-    	
-	app.WaypointView = window.ObjectView.extend({
+    
+	app.WaypointView = app.ObjectView.extend({
 	    
 	    className: "waypoint",
         
 		// Cache the template function for a single waypoint.
 		template: _.template( $('#waypoint-template').html() ),
 		
-		zoomSize: function() {
-		    
-		    this.$('.labelBlock').css('width', this.factor * ORIG_MAX_WIDTH);
-		    
-		    var labelCSS = { };
-		    
-		    // Below 0.7 or 0.6 add serifs?
-		    if(this.factor < 1) labelCSS['font-family'] = 'HelveticaNeue';
-		    else                labelCSS['font-family'] = 'HelveticaNeue-Light';
-		    
-		    labelCSS['font-size'] = this.factor * PRIMARY_FONT_SIZE + 'px';
-            
-		    this.$('label').css(labelCSS);
-		    this.$('.destroy').css(labelCSS);  // Assumes destroy font is same size as label font.
-		    
+		initialize: function() {
+		    // Call super:
+		    app.ObjectView.prototype.initialize.call(this);
+		    this.tag = this.createTag(this.model.get('id'), this.model.get('text'));
 		},
+		
+		render: function() {
+		    // Call super:
+		    app.ObjectView.prototype.render.call(this);
+		    
+		    if(this.model.get('text') === '') {
+		        this.$el.removeClass('waypoint');
+		        this.tag.$el.hide();
+		    } else {
+		        this.$el.addClass('waypoint');
+		        if(this.tag.$el.is(':hidden')) this.tag.$el.show();
+		    }
+		},
+		
+		createTag: function(id, text) {
+		        var view = new app.TagView({ waypoint_id: id, text: text });
+		        // Too coupled to WaypointTagsView? But waypoint + tag need
+		        // to know about each other.  Maybe WaypointTagsView is unnecessary.
+			    $('#waypoint-tags').prepend(view.el);
+			    view.render();
+			    if(!text) view.hide();
+			    return view;
+		},
+		
+		zoomSize: function() {},
 		
 	});
 

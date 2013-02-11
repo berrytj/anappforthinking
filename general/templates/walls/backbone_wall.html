@@ -22,6 +22,7 @@
 	<div id='wall'>
 	    <textarea id='input' class='input'></textarea>
 	    <textarea id="waypoint-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
+	    <div id='trash-can'></div>
 	</div>
 	
 	
@@ -35,7 +36,7 @@
         
         <textarea class='input'></textarea>
         
-<!--		<div class="bullet">&there4;</div>-->
+<!--	<div class="bullet">&there4;</div>  -->
 		<div class='labelBlock'>	
 			<label><%- text %></label>
 		</div>
@@ -44,7 +45,14 @@
 		
 	</script>
 	
-<!--    
+	
+	<script type='text/template' id='waypoint-template'>	
+		<div><%- text %></div>
+		<button class='destroy'>x</button>
+	</script>
+	
+	
+<!-- Still do this instead of fetching for quicker loading?
 	{% for wp in wall.waypoint_set.all %}
 		{% if wp.text|length %}
 			<div id="waypoint{{ wp.pk }}" class="waypoint" style="left:{{ wp.x }}px; top:{{ wp.y }}px;">
@@ -67,9 +75,12 @@ var wall_id = "{{ wall.id }}";
 <script src="{{STATIC_URL}}js/collections/tastypie.js"></script>
 <script src="{{STATIC_URL}}js/collections/collections.js"></script>
 <script src="{{STATIC_URL}}js/views/app.js"></script>
+<script src="{{STATIC_URL}}js/views/object.js"></script>
 <script src="{{STATIC_URL}}js/views/mark.js"></script>
+<script src="{{STATIC_URL}}js/views/waypoint.js"></script>
 <script src="{{STATIC_URL}}js/views/toolbar.js"></script>
 <script src="{{STATIC_URL}}js/views/waypoint-tags.js"></script>
+<script src="{{STATIC_URL}}js/views/tag.js"></script>
 <script src="{{STATIC_URL}}js/walls.js"></script>
 
 {% endblock %}

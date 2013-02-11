@@ -6,6 +6,7 @@ var app = app || {};
 var ENTER_KEY = 13;
 var UP_KEY = 38;
 var DOWN_KEY = 40;
+var Z_KEY = 90;
 var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
@@ -17,7 +18,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 (function() {
     
     'use strict';
-
+    
 	// Our overall **AppView** is the top-level piece of UI.
 	app.AppView = Backbone.View.extend({
 
@@ -27,36 +28,35 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 
 		// Delegated events for creating new items, and clearing completed ones.
 		events: {
-			       'mousedown': 'toggleInput',
-			'mousedown #input': 'doNothing',
-			 'keypress #input': 'createMark',
-	'keypress #waypoint-input': 'createWaypoint',
-			         'keydown': 'checkForZoom',
-			         // keypress in waypoint-input
-			         // stopprop for tags just like for toolbar
+		    'mousedown'               : 'toggleInput',
+			'mousedown #input'        : 'doNothing',
+			'keypress #input'         : 'createMark',
+            'keypress #waypoint-input': 'createWaypoint',
+			'keydown'                 : 'checkForZoom',
 		},
-
+        
 		// At initialization we bind to the relevant events on the `Marks`
 		// collection, when items are added or changed. Kick things off by
 		// loading any preexisting marks that might be saved in *localStorage*.
 		initialize: function() {
 			
 			this.input = this.$('#input');
-			this.dispatcher = _.extend({}, Backbone.Events);
+			// _.extend adds the latter arg to the former:
+			app.dispatcher = _.extend({}, Backbone.Events);
 			// Keep track of zoom factor:
-			this.factor = 1;
+			app.factor = 1;
 			this.keyDown = false;
 			
-			this.dispatcher.on('zoom', this.zoom, this);
-			this.dispatcher.on('undo', this.undo, this);
-			this.dispatcher.on('wallClick', this.hideInput, this);
+			app.dispatcher.on('zoom', this.zoom, this);
+			app.dispatcher.on('undo', this.undo, this);
+			app.dispatcher.on('wallClick', this.hideInput, this);
 			
 			// Does calling window before app change anything?
 			window.app.Marks.on('add',   this.addOne, this);
-			window.app.Marks.on('reset', this.addAll, this);
+			window.app.Marks.on('reset', this.addMarks, this);
 			
 			window.app.Waypoints.on('add',   this.addOne, this);
-			window.app.Waypoints.on('reset', this.addAll, this);
+			window.app.Waypoints.on('reset', this.addWaypoints, this);
 			
 			// Fetching calls 'reset' on Marks collection.
 			app.Marks.fetch(FETCH_OPTS);
@@ -64,20 +64,19 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			app.Undos.fetch(FETCH_OPTS);
 			app.Redos.fetch(FETCH_OPTS);
 			
-			var toolbar = new app.ToolbarView({ dispatcher: this.dispatcher });
-			var waypoint_tags = new app.WaypointTagsView({ dispatcher: this.dispatcher });
+			var toolbar = new app.ToolbarView();
+			var waypoint_tags = new app.WaypointTagsView();
 			
-/*			function undoKeys() {
-	$(document).keydown(function(e) {
-		if(e.which === 90 && e.metaKey && e.shiftKey) {
-			performUndo("redo");
-		} else if(e.which === 90 && e.metaKey) {
-			performUndo("undo");
-		}
-	});
-}*/
-			
-			
+			this.undoKeys();
+		},
+		
+		undoKeys: function() {
+		    $(document).keydown(function(e) {
+		        if(e.which === Z_KEY && e.metaKey && e.shiftKey)
+			        this.undo(true);
+		        else if(e.which === Z_KEY && e.metaKey)
+			        this.undo(false);
+	        });
 		},
 		
 		undo: function(isRedo) {
@@ -93,38 +92,35 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    
 		    if(prev) {
 		        
-		        //decompose this once you add waypoint undos
-		        if(prev.get('type') === 'mark') {
-		            
-		            var mark_id = prev.get('obj_pk');
-		            var mark = app.Marks.get(mark_id);
-		            
-		            other.create({ wall: WALL_URL,
-                                   type: 'mark',
-			                     obj_pk: mark.get('id'),
-			                       text: mark.get('text'),
-			                          x: mark.get('x'),
-			                          y: mark.get('y') });
-		            
-		            var view = this;
-		            mark.save({ text: prev.get('text'),
-		                           x: prev.get('x'),
-		                           y: prev.get('y') },
-		                      { success:function() {
-		                                    // Trigger here because save took longest
-		                                    // in trials, but check for create/destroy
-		                                    // to complete as well to be extra safe?
-		                                    view.dispatcher.trigger('undoComplete');
-		                      }});
-		            
-		            prev.destroy();
-		            
-		        } else if(prev.get('type') === 'waypoint') {
-		            //
-		        }
+		        var coll;
+		        
+		        if(prev.get('type') === 'mark')
+		            coll = app.Marks;
+		        else if(prev.get('type') === 'waypoint')
+		            coll = app.Waypoints;
+		        
+		        var obj = coll.get( prev.get('obj_pk') );
+		        
+		        other.create({ wall: WALL_URL,
+                               type: obj.type,
+			                 obj_pk: obj.get('id'),
+			                   text: obj.get('text'),
+			                      x: obj.get('x'),
+			                      y: obj.get('y') });
+		        
+		        obj.save({ text: prev.get('text'),
+		                      x: prev.get('x'),
+		                      y: prev.get('y') },
+		                 { success: function() {
+		                        // Trigger here because 'save' took longest in trials, but check
+		                        // for create/destroy to complete as well to be extra safe?
+		                        app.dispatcher.trigger('undoComplete');
+		                 }});
+		        
+		        prev.destroy();
 		        
             } else {
-                this.dispatcher.trigger('undoComplete');
+                app.dispatcher.trigger('undoComplete');
             }
             
 		},
@@ -169,10 +165,10 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
                 new_height > $(window).height() ) {
                 
                 // Update absolute zoom factor:
-                this.factor *= rel_factor;
+                app.factor *= rel_factor;
                 
                 // Zoom marks and zoom page.
-                this.dispatcher.trigger('zoomMarks', this.factor, new_width, new_height);
+                app.dispatcher.trigger('zoomObjects', new_width, new_height);
                 this.resizePage(new_width, new_height);
 		        this.recenterWindow(rel_factor);
 		        
@@ -200,20 +196,19 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
         },
         
 		addOne: function(model) {
-		    var attributes = { model: model,
-			                   factor: this.factor,
-			                   dispatcher: this.dispatcher };
 			var view;
-			if(model.type === 'mark') view = new app.MarkView(attributes);
-			else if(model.type === 'waypoint') view = new app.WaypointView(attributes);
+			
+			if(model.type === 'mark')
+			    view = new app.MarkView({ model: model });
+			else if(model.type === 'waypoint')
+			    view = new app.WaypointView({ model: model });
+			
 			$('body').append(view.el);
 			view.render();
 		},
 		
-		addAll: function() {
-		    // Add all items in the **Marks** collection at once.
-			app.Marks.each(this.addOne, this);
-		},
+		addMarks:     function() { app.Marks.each(this.addOne, this); },
+		addWaypoints: function() { app.Waypoints.each(this.addOne, this); },
 		
 		hideInput: function(e) {
 		    if(this.input.is(':visible')) this.createMark(e);
@@ -230,13 +225,13 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    // If any mark-bound input fields are open:
 		    } else if($('.input:visible').length) {  // Looking at subviews -- bad?
 		        
-		        this.dispatcher.trigger('wallClick', e);
+		        app.dispatcher.trigger('wallClick', e);
 		    
 		    // If no input fields are open:
 		    } else {
 		        
-		        $input.css('font-size', this.factor * PRIMARY_FONT_SIZE)
-		              .width(this.factor * ORIG_INPUT_WIDTH)
+		        $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
+		              .width(app.factor * ORIG_INPUT_WIDTH)
 		              .show()
 		              .offset({ left: e.pageX, top: e.pageY });
 		        
@@ -249,51 +244,52 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    }
 		},
 		
-		// Close the 'editing' mode, saving changes to the mark.
 		createMark: function(e) {
-		        
-		        var notClicking = !e.pageX;
-		        var notEnter = !(e.which === ENTER_KEY);
-		        if(notClicking && notEnter) return;
-		        
-		        var $input = this.input;
+		    var clicking = e.pageX;
+		    var enter = (e.which === ENTER_KEY);
+		    if(clicking || enter)
+		        this.createObj(this.input, app.Marks);
+		},
+		
+		createWaypoint: function(e) {
+		    if(e.which === ENTER_KEY)
+		        this.createObj(this.$('#waypoint-input'), app.Waypoints);
+		},
+		
+		createObj: function($input, coll) {
+                
 			    var text = $input.val().trim();
 			    
 			    if(text) {
 			        var loc = $input.offset();
+			        
 			        var attributes = { wall: WALL_URL,
 			                           text: text,
-			                              x: loc.left / this.factor,
-			                              y: loc.top  / this.factor };
-			        app.Marks.create(attributes);
-			        $input.val('');
+			                              x: loc.left / app.factor,
+			                              y: loc.top  / app.factor };
+			        
+			        var model = coll.create(attributes, { wait: true, success: function() {
+			            // Create a blank undo object so creation can be undone / redone:
+			            app.Undos.create({ wall: WALL_URL,
+                                           type: model.type,
+			                             obj_pk: model.get('id'),
+			                               text: '',
+			                                  x: 0,
+			                                  y: 0 });
+			        }});
+			        
+			        $input.val('').hide();
+			        return model;
 			    }
 			    
 			    $input.hide();
-		},
-		
-		createWaypoint: function(e) {
-		    //merge with createmark
-		    var $w = this.$('#waypoint-input');
-		    if(e.which === ENTER_KEY) {
-		        var text = $w.val().trim();
-		        if(text) {
-		            var pos = $w.offset();
-		            app.Waypoints.create({ wall: WALL_URL,
-		                                   text: text,
-		                                   x: pos.left,
-		                                   y: pos.top });
-		            
-		            });
-		            $w.val('');
-		        }
-		        $w.hide();
-		    }
-		    
+			    return ''; // Necessary or does it automatically return null?
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); }
 
 	});
+	
+	app.dispatcher = _.extend({}, Backbone.Events);
 	
 }());

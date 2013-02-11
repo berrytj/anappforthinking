@@ -1,6 +1,5 @@
 body {
     font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
-/*	line-height: 1.4em; /* affects toolbar, fix */
     color: #3d3d3d;
 }
 
@@ -26,6 +25,9 @@ body {
 
 .mark {
     position:absolute;
+    z-index:10;
+    cursor:pointer;
+/*    border:1px dotted green;*/
 }
 
 label {
@@ -69,5 +71,20 @@ button {
     display:inline-block;
     vertical-align:top;
     opacity:0;
-    color:darkred;
+    color:#999999;
+    padding:2px 5px 2px 1px;
+    margin-top:-2px;
+}
+
+.waypoint .destroy {
+    margin-top:11px;
+}
+
+#trash-can {
+    position:fixed;
+    width:100px;
+    height:100px;
+    margin-top:80%;
+    margin-left:90%;
+    border:1px solid black;
 }
