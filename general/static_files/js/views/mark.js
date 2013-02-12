@@ -26,22 +26,21 @@ var X_FACTOR = 1.3;
 		    'keypress .input': 'finishEditing',
 		    }, app.ObjectView.prototype.events),
 		
+		initialize: function() {
+		    app.ObjectView.prototype.initialize.call(this);
+		    app.dispatcher.on('wallClick', this.finishEditing, this);
+		},
+		
 		zoomSize: function() {
 		    
 		    this.$('.labelBlock').css('width', app.factor * ORIG_MAX_WIDTH);
 		    
 		    var labelCSS = {};
-		    
 		    // Below 0.7 or 0.6 add serifs?
 		    if(app.factor < 1) labelCSS['font-family'] = 'HelveticaNeue';
 		    else               labelCSS['font-family'] = 'HelveticaNeue-Light';
-		    
-		    var size = app.factor * PRIMARY_FONT_SIZE;
-		    labelCSS['font-size'] = size + 'px';
-            
+		    labelCSS['font-size'] = app.factor * PRIMARY_FONT_SIZE + 'px';
 		    this.$('label').css(labelCSS);
-		    this.$('.destroy').css({ 'font-size': X_FACTOR * size + 'px',
-		                             'line-height': X_FACTOR * size + 'px' });
 		    
 		    this.shrinkwrap();
 		},
@@ -72,25 +71,28 @@ var X_FACTOR = 1.3;
 		// Close the 'editing' mode, saving changes to the mark.
 		finishEditing: function(e) {
 		        
-		        var $input = this.$('.input');
-		        if($input.is(':visible')) {
+		        // Why is this getting called so much?
+		        //console.log('finish editing');
+		        
+		        var clicking = e.pageX;
+		        var enter = (e.which == ENTER_KEY);
+		        if(clicking || enter) {
+		        
+		            var $input = this.$('.input');
+		            if($input.is(':visible')) {
 		            
-		            var notClicking = !e.pageX;
-		            var notEnter = !(e.which == ENTER_KEY);
-		            if(notClicking && notEnter) return;
-		            
-			        var text = $input.val().trim();
-			        
-			        if(text) {
-			            if(this.model.get('text') !== text) {
-			                this.createUndo();
-			                this.model.save({ text: text });
+			            var text = $input.val().trim();
+			            
+			            if(text) {
+			                if(this.model.get('text') !== text) {
+			                    this.createUndo();
+			                    this.model.save({ text: text });
+			                }
+			                $input.hide();
+			            } else {
+			                this.clear();
 			            }
-			            $input.hide();
-			        } else {
-			            this.clear();
 			        }
-			    
 			    }
 		},
 		

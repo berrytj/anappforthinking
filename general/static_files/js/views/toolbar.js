@@ -14,6 +14,8 @@ var app = app || {};
 		// The DOM events specific to an item.
 		events: {
 		             'mousedown': 'doNothing',
+		        'click #zoom-in': 'zoomIn',
+		       'click #zoom-out': 'zoomOut',
 		    'click #undo-button': 'undo',
 		    'click #redo-button': 'redo',
 		},
@@ -22,6 +24,9 @@ var app = app || {};
 		    this.undoEnabled = true;
 		    app.dispatcher.on('undoComplete', this.enableUndoButtons, this);
 		},
+		
+		zoomIn:  function() { app.dispatcher.trigger('zoom', ZOOM_IN_FACTOR);  },
+		zoomOut: function() { app.dispatcher.trigger('zoom', ZOOM_OUT_FACTOR); },
 		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {

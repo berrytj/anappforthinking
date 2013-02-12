@@ -12,11 +12,10 @@ var app = app || {};
 
 		// The DOM events specific to an item.
 		events: {
-		    'mousedown'         : 'cleanup',
-		    'mouseover'         : 'showX',
-			'mousedown .destroy': 'clear',
+		    'mousedown .input': 'doNothing',
+		    'mousedown': 'cleanup',
 		},
-
+        
 		// The MarkView listens for changes to its model, re-rendering. Since there's
 		// a one-to-one correspondence between a **Mark** and a **MarkView** in this
 		// app, we set a direct reference on the model for convenience.
@@ -33,26 +32,26 @@ var app = app || {};
         
 		// Render the mark.
 		render: function() {
+		    
 		    if(this.model.get('text') === '') {
 		        this.$el.html('');
 		    } else {
 		    
-		    var view = this;
-			this.$el.html(this.template(this.model.toJSON()))
-			        .offset({ left: this.model.get('x') * app.factor,
-			                  top:  this.model.get('y') * app.factor })
-			        .draggable({
-			            start: function() {
-			                $(this).addClass('dragged')
-			                       .find('.destroy').css('opacity', 0);
-			            },
-			            stop: function() {
-			                // Prevent this if dropped in trash so undo puts it at old location.
-			                view.updateLocation();
-			            }
-			         });
-			
-			this.zoomSize(); // Need to specify that it's a child method?
+		        var view = this;
+			    this.$el.html(this.template(this.model.toJSON()))
+			            .offset({ left: this.model.get('x') * app.factor,
+			                      top:  this.model.get('y') * app.factor })
+			            .draggable({
+			                start: function() {
+			                    $(this).addClass('dragged');
+			                },
+			                stop: function() {
+			                    if($(this).hasClass('dropped')) $(this).removeClass('dropped');
+			                    else view.updateLocation();
+			                }
+			    });
+			    
+			    this.zoomSize();
             
             }
 			return this;
@@ -69,21 +68,6 @@ var app = app || {};
             
 		},
 		
-		showX: function(e) {
-		    
-		    if(!e.which) {  // If mouse is up (not dragging):
-		        
-		        var $x = this.$('.destroy');
-		        $x.css('opacity', 1);
-		        var $obj = this.$el;
-		        $obj.on('mouseleave', function() {
-		            $x.css('opacity', 0);
-		            $obj.unbind('mouseleave');
-		        });
-		    
-		    }
-		},
-		
 		updateLocation: function() {
 		    var loc = this.$el.offset();
 		    this.createUndo();
@@ -96,7 +80,7 @@ var app = app || {};
 		    
 		    // FIX THIS: this closes editing when a mark is clicked,
 		    // but even closes the mark you're currently editing / clicking.
-//		    app.dispatcher.trigger('wallClick', e);
+		    app.dispatcher.trigger('wallClick', e);
             
 		    this.$el.removeClass('dragged');
 		},
@@ -109,12 +93,15 @@ var app = app || {};
 			                   text: this.model.get('text'),
 			                      x: this.model.get('x'),
 			                      y: this.model.get('y') });
+			app.dispatcher.trigger('clearRedos');
 		},
 		
 		clear: function() {
 		    this.createUndo();
 		    this.model.save({ text: '' });
 		},
+		
+		doNothing: function(e) { e.stopPropagation(); }
 		
 	});
 

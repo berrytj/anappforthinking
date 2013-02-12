@@ -41,7 +41,7 @@ var WP_FONT_SIZE = 16;
 		        // to know about each other.  Maybe WaypointTagsView is unnecessary.
 			    $('#waypoint-tags').prepend(view.el);
 			    view.render();
-			    if(!text) view.hide();
+			    if(!text) view.$el.hide();
 			    return view;
 		},
 		

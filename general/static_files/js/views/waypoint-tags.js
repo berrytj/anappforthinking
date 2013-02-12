@@ -4,6 +4,7 @@
 var app = app || {};
 var HIDE_TIME = 500;
 var INPUT_HEIGHT = 100;  // Can't use .height() because of padding.
+var ARROW_PADDING = 8;
 
 (function() {
     
@@ -28,7 +29,7 @@ var INPUT_HEIGHT = 100;  // Can't use .height() because of padding.
 		hideTags: function() {
 		    var button = this.$('#hide-tags');
 		    if(button.html() === '«') {
-		        var offscreen = (button.offset().left - $(document).scrollLeft()) * -1; //+15?
+		        var offscreen = (button.offset().left - $(document).scrollLeft() - ARROW_PADDING) * -1;
 		        this.$el.animate({ left: offscreen }, HIDE_TIME, function() { button.html('»'); });
 	        } else {
 	            this.$el.animate({ left: 0 }, HIDE_TIME, function() { button.html('«'); });

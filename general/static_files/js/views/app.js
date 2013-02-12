@@ -19,25 +19,20 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
     
     'use strict';
     
-	// Our overall **AppView** is the top-level piece of UI.
 	app.AppView = Backbone.View.extend({
-
-		// Instead of generating a new element, bind to the existing skeleton of
-		// the App already present in the HTML.
+	    
 		el: 'body',
 
 		// Delegated events for creating new items, and clearing completed ones.
 		events: {
 		    'mousedown'               : 'toggleInput',
 			'mousedown #input'        : 'doNothing',
+			'mousedown #trash-can'    : 'doNothing',
 			'keypress #input'         : 'createMark',
             'keypress #waypoint-input': 'createWaypoint',
 			'keydown'                 : 'checkForZoom',
 		},
-        
-		// At initialization we bind to the relevant events on the `Marks`
-		// collection, when items are added or changed. Kick things off by
-		// loading any preexisting marks that might be saved in *localStorage*.
+		
 		initialize: function() {
 			
 			this.input = this.$('#input');
@@ -50,6 +45,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			app.dispatcher.on('zoom', this.zoom, this);
 			app.dispatcher.on('undo', this.undo, this);
 			app.dispatcher.on('wallClick', this.hideInput, this);
+			app.dispatcher.on('clearRedos', this.clearRedos, this);
 			
 			// Does calling window before app change anything?
 			window.app.Marks.on('add',   this.addOne, this);
@@ -70,12 +66,21 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			this.undoKeys();
 		},
 		
+		clearRedos: function() {
+		    app.Redos.each(this.destroyModel, this);
+		},
+		
+		destroyModel: function(model) {
+		    model.destroy();
+		},
+		
 		undoKeys: function() {
+		    var view = this;
 		    $(document).keydown(function(e) {
 		        if(e.which === Z_KEY && e.metaKey && e.shiftKey)
-			        this.undo(true);
+			        view.undo(true);
 		        else if(e.which === Z_KEY && e.metaKey)
-			        this.undo(false);
+			        view.undo(false);
 	        });
 		},
 		
@@ -217,73 +222,75 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		toggleInput: function(e) {
 		    
 		    var $input = this.input;
-		    // If the unbound input field is open:
-		    if($input.is(':visible')) {
-		        
-		        this.createMark(e);
-		        
-		    // If any mark-bound input fields are open:
-		    } else if($('.input:visible').length) {  // Looking at subviews -- bad?
-		        
-		        app.dispatcher.trigger('wallClick', e);
 		    
-		    // If no input fields are open:
-		    } else {
-		        
-		        $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
-		              .width(app.factor * ORIG_INPUT_WIDTH)
-		              .show()
-		              .offset({ left: e.pageX, top: e.pageY });
-		        
-		        // This method is called on mousedown, so focus once mouse is released:
-		        $(window).mouseup(function() {
-		            $input.focus();
-		            $(window).unbind('mouseup');
-		        });
-		        
-		    }
+		    if($input.is(':visible'))  // If the unbound input field is open:
+		        this.createMark(e);
+		    else if(this.$('#waypoint-input').is(':visible'))
+		        this.createWaypoint(e);
+		    else if($('.input:visible').length)  // If any mark-bound input fields are open:
+		        app.dispatcher.trigger('wallClick', e);
+		    else  // If no input fields are open:
+		        this.showInput(e, $input);
+		},
+		
+		showInput: function(e, $input) {
+		    
+		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
+		          .width(app.factor * ORIG_INPUT_WIDTH)
+		          .show()
+		          .offset({ left: e.pageX, top: e.pageY });
+		    
+		    // This method is called on mousedown,
+		    // so focus once mouse is released:
+		    $(window).mouseup(function() {
+		        $input.focus();
+		        $(window).unbind('mouseup');
+		    });
 		},
 		
 		createMark: function(e) {
-		    var clicking = e.pageX;
-		    var enter = (e.which === ENTER_KEY);
-		    if(clicking || enter)
-		        this.createObj(this.input, app.Marks);
+		    // Add these as arguments in 'events' up top?
+		    this.createObj(e, this.input, app.Marks);
 		},
 		
 		createWaypoint: function(e) {
-		    if(e.which === ENTER_KEY)
-		        this.createObj(this.$('#waypoint-input'), app.Waypoints);
+		    this.createObj(e, this.$('#waypoint-input'), app.Waypoints);
 		},
 		
-		createObj: function($input, coll) {
+		createObj: function(e, $input, coll) {
                 
-			    var text = $input.val().trim();
-			    
-			    if(text) {
-			        var loc = $input.offset();
-			        
-			        var attributes = { wall: WALL_URL,
-			                           text: text,
-			                              x: loc.left / app.factor,
-			                              y: loc.top  / app.factor };
-			        
-			        var model = coll.create(attributes, { wait: true, success: function() {
-			            // Create a blank undo object so creation can be undone / redone:
-			            app.Undos.create({ wall: WALL_URL,
-                                           type: model.type,
-			                             obj_pk: model.get('id'),
-			                               text: '',
-			                                  x: 0,
-			                                  y: 0 });
-			        }});
-			        
-			        $input.val('').hide();
-			        return model;
+                var clicking = e.pageX;
+		        var enter = (e.which === ENTER_KEY);
+		        if(clicking || enter) {
+			        var text = $input.val().trim();
+			        if(text) this.createModel($input, text, coll);
+			        $input.hide();
 			    }
-			    
-			    $input.hide();
-			    return ''; // Necessary or does it automatically return null?
+		},
+		
+		createModel: function($input, text, coll) {
+		    
+		    var loc = $input.offset();
+			var attributes = { wall: WALL_URL,
+			                   text: text,
+			                      x: loc.left / app.factor,
+			                      y: loc.top  / app.factor };
+			
+			coll.create(attributes, { wait: true, success: this.createEmptyUndo });
+			
+			$input.val('');
+		},
+		
+		createEmptyUndo: function(model) {
+			// Create a blank undo object so creation can be undone / redone:
+			app.Undos.create({ wall: WALL_URL,
+                               type: model.type,
+			                 obj_pk: model.get('id'),
+			                   text: '',
+			                      x: 0,
+			                      y: 0 });
+			
+			app.dispatcher.trigger('clearRedos');
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); }

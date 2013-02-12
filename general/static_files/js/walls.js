@@ -7,7 +7,10 @@ $(function() {
     
     $('.input').autoGrow();
     $('#trash-can').droppable({
+        accept: '.ui-draggable',
+        hoverClass: 'active-trash-can',
         drop: function(e, ui) {
+            ui.draggable.addClass('dropped');
             ui.draggable.data('view').clear();
         }
     });

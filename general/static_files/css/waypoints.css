@@ -14,7 +14,6 @@
 	background-repeat:no-repeat;
 	text-shadow:1px 4px 2px rgba(0,0,0,0.0);
 	z-index:1;
-/*	border:1px solid red;*/
 }
 
 #waypoint-input {
@@ -33,26 +32,25 @@
 
 #waypoint-tags {
 	position:fixed;
-	margin:90% 0 0 2%;
+	margin:92% 0 0 2%;
 	width:96%;
-	height:40px;
-	z-index:30000;
+	height:35px;
+	z-index:20000;
 }
 
 #hide-tags {
-	float:left;
-	margin:-4px 0 0 -4px;
-	padding:0px 6px 3px 0px;
+    position:absolute;
+    
+	padding:0px 5px 2px 3px;
+	margin-top:-11px;
+	
 	font-size:30px;
 	color:#777777;
-	cursor:pointer;
 	text-shadow:2px 3px 3px rgba(0,0,0,0.4);
+	cursor:pointer;
 }
 
 .waypoint-tag {
-	float:left;
-	cursor:pointer;
-	
 	padding:6px 10px;
 	margin-right:10px;
 	
@@ -65,4 +63,10 @@
 	border-radius:4px;
 	
 	background-image:url('../images/darknoise.png');
+	cursor:pointer;
+}
+
+#add-waypoint {
+    padding-right:9px;
+    margin-left:-4px;
 }

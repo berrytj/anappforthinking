@@ -67,24 +67,17 @@ button {
 	appearance: none;
 }
 
-.destroy {
-    display:inline-block;
-    vertical-align:top;
-    opacity:0;
-    color:#999999;
-    padding:2px 5px 2px 1px;
-    margin-top:-2px;
-}
-
-.waypoint .destroy {
-    margin-top:11px;
-}
-
-#trash-can {
+.trash-can {
     position:fixed;
-    width:100px;
-    height:100px;
-    margin-top:80%;
-    margin-left:90%;
-    border:1px solid black;
+    width:90px;
+    height:90px;
+    margin-top:85%;
+    margin-left:89%;
+    background-image:url('../images/trash.png');
+    background-size:90px 90px;
+    z-index:1;
+}
+
+.active-trash-can {
+    background-image:url('../images/active-trash.png');
 }
