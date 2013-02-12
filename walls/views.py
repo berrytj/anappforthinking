@@ -4,6 +4,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from walls.models import Wall
 
+
 @login_required(login_url='/login/')
 def index(request):
     '''Renders the home page.'''
@@ -15,7 +16,10 @@ def wall(request, pk):
     '''Renders a user's wall, selected by primary key.'''
     
     w = get_object_or_404(Wall, pk=pk)
-    return render(request, 'walls/wall.html', { 'wall': w, 'username': request.user.username })
+    if(w.user == request.user):
+        return render(request, 'walls/wall.html', { 'wall': w, 'username': request.user.username })
+    else:
+        return render(request, 'walls/index.html')
 
 def newWall(request):
     '''Creates a new wall, given a title.'''
