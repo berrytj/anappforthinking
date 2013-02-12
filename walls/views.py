@@ -1,6 +1,6 @@
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from walls.models import Wall
 
@@ -24,4 +24,4 @@ def newWall(request):
     title = request.POST['wall']
     new = Wall(user=user, title=title)
     new.save()
-    return HttpResponseRedirect(reverse('walls.views.detail', args=(new.pk,)))
+    return HttpResponseRedirect(reverse('walls.views.wall', args=(new.pk,)))
