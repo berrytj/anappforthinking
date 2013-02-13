@@ -1,4 +1,4 @@
-/*         MENU
+/*         MENU          */
 /*************************/
 
 .menu-base {
@@ -8,11 +8,12 @@
 }
 
 .not-using {
-
+    
 }
 
 #menu-background-gradient {
 	z-index:9999;
+	
     background: rgb(229,210,167); /* Old browsers */
     background: -moz-linear-gradient(top,  rgba(229,210,167,1) 0%, rgba(183,144,33,1) 100%); /* FF3.6+ */
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(229,210,167,1)), color-stop(100%,rgba(183,144,33,1))); /* Chrome,Safari4+ */
@@ -21,9 +22,6 @@
     background: -ms-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* IE10+ */
     background: linear-gradient(to bottom,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e5d2a7', endColorstr='#b79021',GradientType=0 ); /* IE6-9 */
-   
-     
-    
 }
 
 #menu {
@@ -32,7 +30,7 @@
 }
 
 
-/*         BUTTONS
+/*         BUTTONS          */
 /****************************/
 
 #wall-title {
@@ -90,12 +88,13 @@
     -webkit-background-clip:text;
     -moz-background-clip:text;
     background-clip:text;
-    
-/*    -webkit-font-smoothing:antialiased;*/
 }
 
-#zoom-in     { margin-left:63.5%; }
-#zoom-out    { margin-left:69.3%; }
+#line-up     { margin-left:43.8%; }
+#evenly-space{ margin-left:48.9%; }
+
+#zoom-in     { margin-left:64%;   }
+#zoom-out    { margin-left:69.8%; }
 
 #undo-button { margin-left:83.2%; }
 #redo-button { margin-left:87.5%; }

@@ -18,6 +18,8 @@ var app = app || {};
 		       'click #zoom-out': 'zoomOut',
 		    'click #undo-button': 'undo',
 		    'click #redo-button': 'redo',
+		        'click #line-up': 'lineUp',
+		   'click #evenly-space': 'evenlySpace',
 		},
 		
 		initialize: function() {
@@ -25,8 +27,11 @@ var app = app || {};
 		    app.dispatcher.on('undoComplete', this.enableUndoButtons, this);
 		},
 		
-		zoomIn:  function() { app.dispatcher.trigger('zoom', ZOOM_IN_FACTOR);  },
-		zoomOut: function() { app.dispatcher.trigger('zoom', ZOOM_OUT_FACTOR); },
+		// Put these functions into app.js instead of separating into toolbar view?
+		lineUp:      function() { app.dispatcher.trigger('lineUp'); },
+		evenlySpace: function() { app.dispatcher.trigger('evenlySpace'); },
+		zoomIn:      function() { app.dispatcher.trigger('zoom', ZOOM_IN_FACTOR);  },
+		zoomOut:     function() { app.dispatcher.trigger('zoom', ZOOM_OUT_FACTOR); },
 		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {

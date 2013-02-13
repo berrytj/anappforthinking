@@ -18,10 +18,10 @@
 }
 
 #waypoint-input {
-	border:0px solid black;
 	cursor:text;
 	resize:none;
 	overflow:hidden;
+	border-width:0px;
 	background-color:transparent;
 	outline:none;
 	-webkit-appearance:none;

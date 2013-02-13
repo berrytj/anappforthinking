@@ -14,13 +14,19 @@ $(function() {
         hoverClass: 'active-trash-can',
         tolerance: 'pointer',
         drop: function(e, ui) {
-            ui.draggable.addClass('dropped');
-            ui.draggable.data('view').clear();
+            if(ui.draggable.hasClass('ui-selected')) {
+                $('.ui-selected').each(function() {
+                    $(this).data('view').clear();
+                });
+            } else {
+//              ui.draggable.addClass('dropped');
+                ui.draggable.data('view').clear();
+            }
         }
     });
     
     $('#wall').selectable({
-        filter: '.mark, .waypoint',
+        filter: '.mark, .waypoint:not(#waypoint-input)',
         distance: 10,
         start: function(e) {
             app.dragging = true;

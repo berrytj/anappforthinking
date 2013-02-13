@@ -35,6 +35,7 @@ var app = app || {};
 		    
 		    if(this.model.get('text') === '') {
 		        this.$el.html('');
+		        this.$el.css('box-shadow', 'none');
 		    } else {
 		        
 		        var view = this;
@@ -42,7 +43,7 @@ var app = app || {};
 			            .offset({ left: this.model.get('x') * app.factor,
 			                      top:  this.model.get('y') * app.factor })
 			            .draggable({
-			                revertDuration: 10, // grouped items animate separately, so leave this number low
+			                revertDuration: 10,  // What is this? grouped items animate separately, so leave this number low
                             start: function(e, ui) {
                                 
                                 app.dragging = true;
@@ -86,7 +87,7 @@ var app = app || {};
 		},
 		
 		afterDragging: function($obj) {
-		    if($obj.hasClass('dropped')) $obj.removeClass('dropped');
+//		    if($obj.hasClass('dropped')) $obj.removeClass('dropped');
             $obj.data('view').updateLocation();
 		},
 		
@@ -102,7 +103,7 @@ var app = app || {};
 		
 		updateLocation: function() {
 		    var loc = this.$el.offset();
-		    this.createUndo();
+//		    this.createUndo();
 		    this.model.save({ x: loc.left / app.factor,
 		                      y: loc.top  / app.factor });
 		},
@@ -122,11 +123,12 @@ var app = app || {};
 			                   text: this.model.get('text'),
 			                      x: this.model.get('x'),
 			                      y: this.model.get('y') });
+			
 			app.dispatcher.trigger('clearRedos');
 		},
 		
 		clear: function() {
-		    this.createUndo();
+//		    this.createUndo();
 		    this.model.save({ text: '' });
 		},
 		

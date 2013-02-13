@@ -3,7 +3,7 @@
 
 var app = app || {};
 var LABEL_PADDING = 2;
-var MARK_PADDING = 14;
+var MARK_PADDING = 6;
 var PRIMARY_FONT_SIZE = 14;
 var ORIG_MAX_WIDTH = 370;
 var ORIG_INPUT_WIDTH = 380;

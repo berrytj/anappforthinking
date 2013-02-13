@@ -16,7 +16,8 @@ var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 var INPUT_OFFSET_X = 7;
 var INPUT_OFFSET_Y = 4;
-var WAIT_FOR_DRAG = 100;
+var WAIT_FOR_DRAG = 130;
+var SPACING = 6;
 
 (function() {
     
@@ -49,6 +50,8 @@ var WAIT_FOR_DRAG = 100;
 			
 			app.dispatcher.on('zoom', this.zoom, this);
 			app.dispatcher.on('undo', this.undo, this);
+			app.dispatcher.on('lineUp', this.lineUp, this);
+			app.dispatcher.on('evenlySpace', this.evenlySpace, this);
 			app.dispatcher.on('clearRedos', this.clearRedos, this);
 			app.dispatcher.on('clearSelected', this.clearSelected, this);
 			
@@ -73,6 +76,51 @@ var WAIT_FOR_DRAG = 100;
 			var waypoint_tags = new app.WaypointTagsView();
 			
 			this.undoKeys();
+		},
+		
+		lineUp: function() {
+		    var $selectedMarks = this.$('.ui-selected').not('.waypoint');
+		    if($selectedMarks.length) {
+		        // use top one instead of first id?
+		        var x = $selectedMarks.first().offset().left;
+		        $selectedMarks.each(function() {
+		            $(this).offset({ left: x });
+		            $(this).data('view').updateLocation();
+		        });
+		    }
+		},
+		
+		evenlySpace: function() {
+		    
+		    // .get() returns array from jQuery object:
+		    var marks = this.$('.ui-selected').not('.waypoint').get();
+		    
+		    // Using insertion sort because array should be mostly sorted:
+		    // marks higher on the screen are likely to have been created first.
+		    for(var i=1; i < marks.length; i++) {
+		        var j = i;
+		        while(j > 0) {
+		            var val = $(marks[j]).offset().top;
+		            if(val < $(marks[j-1]).offset().top) {
+		                var temp = marks[j];
+		                marks[j] = marks[j-1];
+		                marks[j-1] = temp;
+		                j--;
+		            } else {
+		                break;
+		            }
+		        }
+		    }
+		    
+		    // Use recursion here?
+		    // You can pass new_y forward instead of calling $prev.offset().top each time.
+		    for(var i=1; i < marks.length; i++) {
+		        var $prev = $(marks[i-1]);
+		        var new_y = $prev.offset().top + $prev.outerHeight() + SPACING * app.factor;
+		        $(marks[i]).offset({ top: new_y })
+		                   .data('view').updateLocation();
+		    }
+		    
 		},
 		
 		resetDragging: function() {
@@ -330,12 +378,11 @@ var WAIT_FOR_DRAG = 100;
 		createModel: function($input, text, coll) {
 		    
 		    var loc = $input.offset();
-		    var padding_left = parseInt( $input.css('padding-left') );
-		    var padding_top  = parseInt( $input.css('padding-top') );
-		    var x = (loc.left + padding_left) / app.factor;
-		    var y = (loc.top  + padding_top)  / app.factor;
-		    
-			var attributes = { wall: WALL_URL, text: text, x: x, y: y };
+			var attributes = { wall: WALL_URL,
+			                   text: text,
+			                   x: loc.left / app.factor,
+			                   y: loc.top  / app.factor };
+			
 			coll.create(attributes, { wait: true, success: this.createEmptyUndo });
 			
 			$input.val('');
