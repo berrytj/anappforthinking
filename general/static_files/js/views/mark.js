@@ -15,11 +15,11 @@ var X_FACTOR = 1.3;
     
 	app.MarkView = app.ObjectView.extend({
 	    
-	    className: "mark",
-
+	    className: 'mark',
+        
 		// Cache the template function for a single mark.
 		template: _.template( $('#mark-template').html() ),
-
+        
 		// The DOM events specific to an item.
 		events: _.extend({
 		    'click .labelBlock': 'edit',
@@ -36,9 +36,13 @@ var X_FACTOR = 1.3;
 		    this.$('.labelBlock').css('width', app.factor * ORIG_MAX_WIDTH);
 		    
 		    var labelCSS = {};
-		    // Below 0.7 or 0.6 add serifs?
-		    if(app.factor < 1) labelCSS['font-family'] = 'HelveticaNeue';
-		    else               labelCSS['font-family'] = 'HelveticaNeue-Light';
+		    
+		    if(app.factor < 1) {
+		        labelCSS['font-family'] = 'HelveticaNeue';
+		    } else {
+		        labelCSS['font-family'] = 'HelveticaNeue-Light';
+		    }
+		    
 		    labelCSS['font-size'] = app.factor * PRIMARY_FONT_SIZE + 'px';
 		    this.$('label').css(labelCSS);
 		    
@@ -58,6 +62,9 @@ var X_FACTOR = 1.3;
 		    if($mark.hasClass('dragged')) {
 		        $mark.removeClass('dragged');
 		    } else {
+		        
+		        app.dispatcher.trigger('clearSelected');
+		        
 		        this.$('.input').css('font-size', app.factor * PRIMARY_FONT_SIZE)
 		                        .width(app.factor * ORIG_INPUT_WIDTH)
 		                        .show()

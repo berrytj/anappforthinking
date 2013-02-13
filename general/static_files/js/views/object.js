@@ -36,25 +36,58 @@ var app = app || {};
 		    if(this.model.get('text') === '') {
 		        this.$el.html('');
 		    } else {
-		    
+		        
 		        var view = this;
 			    this.$el.html(this.template(this.model.toJSON()))
 			            .offset({ left: this.model.get('x') * app.factor,
 			                      top:  this.model.get('y') * app.factor })
 			            .draggable({
-			                start: function() {
-			                    $(this).addClass('dragged');
-			                },
-			                stop: function() {
-			                    if($(this).hasClass('dropped')) $(this).removeClass('dropped');
-			                    else view.updateLocation();
-			                }
+			                revertDuration: 10, // grouped items animate separately, so leave this number low
+                            start: function(e, ui) {
+                                
+                                app.dragging = true;
+                                $(this).addClass('dragged');
+                                
+                                if($(this).hasClass('ui-selected')) {
+                                    
+                                    $('.ui-selected').each(function() {
+                                        var pos = $(this).offset();
+                                        $(this).data({ 'x': pos.left - ui.position.left,
+                                                       'y': pos.top  - ui.position.top });
+                                    });
+                                    
+                                } else {
+                                    app.dispatcher.trigger('clearSelected');
+                                }
+                            },
+                            drag: function(e, ui) {
+                                if($(this).hasClass('ui-selected')) {
+                                    $('.ui-selected').each(function() {
+                                        $(this).css({ left: $(this).data('x') + ui.position.left,
+                                                      top:  $(this).data('y') + ui.position.top });
+                                    });
+                                }
+                            },
+                            stop: function() {
+                                if($(this).hasClass('ui-selected')) {
+                                    $('.ui-selected').each(function() {
+                                        view.afterDragging( $(this) );
+                                    });
+                                } else {
+                                    view.afterDragging( $(this) );
+                                }
+                            },
 			    });
 			    
 			    this.zoomSize();
             
             }
 			return this;
+		},
+		
+		afterDragging: function($obj) {
+		    if($obj.hasClass('dropped')) $obj.removeClass('dropped');
+            $obj.data('view').updateLocation();
 		},
 		
 		zoom: function(new_width, new_height) {
@@ -65,7 +98,6 @@ var app = app || {};
             var new_x = new_width  * (pos.left / $('#wall').width());
             var new_y = new_height * (pos.top / $('#wall').height());
             this.$el.animate({ left: new_x, top: new_y }, ANIM_OPTS);
-            
 		},
 		
 		updateLocation: function() {
@@ -77,12 +109,9 @@ var app = app || {};
 		
 		cleanup: function(e) {
 		    e.stopPropagation();
-		    
-		    // FIX THIS: this closes editing when a mark is clicked,
-		    // but even closes the mark you're currently editing / clicking.
 		    app.dispatcher.trigger('wallClick', e);
-            
-		    this.$el.removeClass('dragged');
+            // Need this?
+//		    this.$el.removeClass('dragged');
 		},
 		
 		createUndo: function() {

@@ -14,6 +14,9 @@ var TIME = 100;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 // Get items for this wall only; don't limit quantity returned (default is 20):
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
+var INPUT_OFFSET_X = 7;
+var INPUT_OFFSET_Y = 4;
+var WAIT_FOR_DRAG = 100;
 
 (function() {
     
@@ -22,36 +25,42 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 	app.AppView = Backbone.View.extend({
 	    
 		el: 'body',
-
+        
 		// Delegated events for creating new items, and clearing completed ones.
 		events: {
-		    'mousedown'               : 'toggleInput',
+		    'mousedown'               : 'waitThenToggle',
 			'mousedown #input'        : 'doNothing',
 			'mousedown #trash-can'    : 'doNothing',
 			'keypress #input'         : 'createMark',
             'keypress #waypoint-input': 'createWaypoint',
 			'keydown'                 : 'checkForZoom',
+			'mouseup'                 : 'resetDragging',
 		},
 		
 		initialize: function() {
 			
-			this.input = this.$('#input');
-			// _.extend adds the latter arg to the former:
-			app.dispatcher = _.extend({}, Backbone.Events);
-			// Keep track of zoom factor:
-			app.factor = 1;
-			this.keyDown = false;
+			this.input = this.$('#input');  // Cache input field (accessed frequently).
+			this.keyDown = false;  // Used to prevent multiple zooms from holding down arrow keys.
+			
+			app.dispatcher = _.extend({}, Backbone.Events);  // _.extend adds the latter arg to the former.
+			app.factor = 1;  // Keep track of zoom factor.
+			app.dragging = false;  // Used to distinguish between click and drags.
+			app.mousedown = false;
 			
 			app.dispatcher.on('zoom', this.zoom, this);
 			app.dispatcher.on('undo', this.undo, this);
-			app.dispatcher.on('wallClick', this.hideInput, this);
 			app.dispatcher.on('clearRedos', this.clearRedos, this);
+			app.dispatcher.on('clearSelected', this.clearSelected, this);
+			
+			// Refine this: only check for marks being edited if inputs aren't open.
+			// Don't check inputs again when this is called from within toggleInput.
+			app.dispatcher.on('wallClick', this.hideInputs, this);
 			
 			// Does calling window before app change anything?
-			window.app.Marks.on('add',   this.addOne, this);
+			window.app.Marks.on('add',   this.createViewForModel, this);
 			window.app.Marks.on('reset', this.addMarks, this);
 			
-			window.app.Waypoints.on('add',   this.addOne, this);
+			window.app.Waypoints.on('add',   this.createViewForModel, this);
 			window.app.Waypoints.on('reset', this.addWaypoints, this);
 			
 			// Fetching calls 'reset' on Marks collection.
@@ -64,6 +73,14 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			var waypoint_tags = new app.WaypointTagsView();
 			
 			this.undoKeys();
+		},
+		
+		resetDragging: function() {
+		    app.dragging = false;
+		    
+		    // Doesn't work if user mouseup's before timeout ends (which is typical).
+		    app.mousedown = false;
+		    this.$('#wall').selectable('enable');
 		},
 		
 		clearRedos: function() {
@@ -176,7 +193,6 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
                 app.dispatcher.trigger('zoomObjects', new_width, new_height);
                 this.resizePage(new_width, new_height);
 		        this.recenterWindow(rel_factor);
-		        
 		    }
 		},
 		
@@ -200,7 +216,8 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
             $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 }, ANIM_OPTS);
         },
         
-		addOne: function(model) {
+		createViewForModel: function(model) {
+			
 			var view;
 			
 			if(model.type === 'mark')
@@ -208,44 +225,85 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			else if(model.type === 'waypoint')
 			    view = new app.WaypointView({ model: model });
 			
-			$('body').append(view.el);
+			this.$('#wall').append(view.el);
 			view.render();
 		},
 		
-		addMarks:     function() { app.Marks.each(this.addOne, this); },
-		addWaypoints: function() { app.Waypoints.each(this.addOne, this); },
+		addMarks:     function() { app.Marks.each(this.createViewForModel, this); },
+		addWaypoints: function() { app.Waypoints.each(this.createViewForModel, this); },
 		
-		hideInput: function(e) {
-		    if(this.input.is(':visible')) this.createMark(e);
+		hideInputs: function(e) {
+		    
+		    var open = false;
+		    
+		    if(this.input.is(':visible')) {
+		        
+		        this.createMark(e);
+		        open = true;
+		        
+		    } else if(this.$('#waypoint-input').is(':visible')) {
+		        
+		        this.createWaypoint(e);
+		        open = true;
+		        
+		    }
+		    
+		    return open;
+		},
+		
+		waitThenToggle: function(e) {
+		    
+		    app.mousedown = true;
+		    
+		    var view = this;
+		    
+		    setTimeout(function() {
+		        if(!app.dragging) view.toggleInput(e);
+		    }, WAIT_FOR_DRAG);
 		},
 		
 		toggleInput: function(e) {
 		    
-		    var $input = this.input;
+		    // Is either input open?
+		    var open = this.hideInputs(e);
 		    
-		    if($input.is(':visible'))  // If the unbound input field is open:
-		        this.createMark(e);
-		    else if(this.$('#waypoint-input').is(':visible'))
-		        this.createWaypoint(e);
-		    else if($('.input:visible').length)  // If any mark-bound input fields are open:
-		        app.dispatcher.trigger('wallClick', e);
-		    else  // If no input fields are open:
-		        this.showInput(e, $input);
+		    if(!open) {
+		        
+		        if(this.$('.input:visible').length) {
+		            // Any marks being edited?
+		            app.dispatcher.trigger('wallClick', e);
+		            
+		        } else if(this.$('.ui-selected').length) {
+		            // Any marks selected?
+		            app.dispatcher.trigger('clearSelected');
+		            
+		        } else {
+		            
+		            this.showInput(e, this.input);
+		            
+		        }
+		        
+		    }
+		},
+		
+		clearSelected: function() {
+		    this.$('.ui-selected').each(function() {
+                $(this).removeClass('ui-selected');
+            });
 		},
 		
 		showInput: function(e, $input) {
 		    
+		    if(app.mousedown)
+		        this.$('#wall').selectable('disable');
+		    
 		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
 		          .width(app.factor * ORIG_INPUT_WIDTH)
 		          .show()
-		          .offset({ left: e.pageX, top: e.pageY });
+		          .offset({ left: e.pageX - INPUT_OFFSET_X,
+		                    top:  e.pageY - INPUT_OFFSET_Y });
 		    
-		    // This method is called on mousedown,
-		    // so focus once mouse is released:
-		    $(window).mouseup(function() {
-		        $input.focus();
-		        $(window).unbind('mouseup');
-		    });
+		    $input.focus();
 		},
 		
 		createMark: function(e) {
@@ -261,6 +319,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
                 
                 var clicking = e.pageX;
 		        var enter = (e.which === ENTER_KEY);
+		        
 		        if(clicking || enter) {
 			        var text = $input.val().trim();
 			        if(text) this.createModel($input, text, coll);
@@ -271,17 +330,19 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		createModel: function($input, text, coll) {
 		    
 		    var loc = $input.offset();
-			var attributes = { wall: WALL_URL,
-			                   text: text,
-			                      x: loc.left / app.factor,
-			                      y: loc.top  / app.factor };
-			
+		    var padding_left = parseInt( $input.css('padding-left') );
+		    var padding_top  = parseInt( $input.css('padding-top') );
+		    var x = (loc.left + padding_left) / app.factor;
+		    var y = (loc.top  + padding_top)  / app.factor;
+		    
+			var attributes = { wall: WALL_URL, text: text, x: x, y: y };
 			coll.create(attributes, { wait: true, success: this.createEmptyUndo });
 			
 			$input.val('');
 		},
 		
 		createEmptyUndo: function(model) {
+			
 			// Create a blank undo object so creation can be undone / redone:
 			app.Undos.create({ wall: WALL_URL,
                                type: model.type,
@@ -294,9 +355,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); }
-
+        
 	});
-	
-	app.dispatcher = _.extend({}, Backbone.Events);
 	
 }());

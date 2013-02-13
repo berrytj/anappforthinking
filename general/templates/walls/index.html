@@ -2,12 +2,17 @@
 {% block title %}walls{% endblock %}
 {% block body %}
 
+<div id="confirm-delete" style='display:none;'></div>
+
 <div class="container-fluid">
 
 <div class="row-fluid">
   <div class="span3 offset5 wall-list">
     {% for wall in user.wall_set.all %}
-      <div><a href="/{{ wall.id }}/">{{ wall.title }}</a></div>
+      <div class='wall-name'>
+        <a href="/{{ wall.id }}/">{{ wall.title }}</a>
+        <span class='delete-wall'>x</span>
+      </div>
     {% endfor %}
     <form id="new-wall-form" action="/newWall/" method="post">
         {% csrf_token %}

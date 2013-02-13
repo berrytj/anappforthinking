@@ -5,14 +5,27 @@ var app = app || {};
 
 $(function() {
     
+    // Move these into app.js?
+    
     $('.input').autoGrow();
+    
     $('#trash-can').droppable({
         accept: '.ui-draggable',
         hoverClass: 'active-trash-can',
+        tolerance: 'pointer',
         drop: function(e, ui) {
             ui.draggable.addClass('dropped');
             ui.draggable.data('view').clear();
         }
+    });
+    
+    $('#wall').selectable({
+        filter: '.mark, .waypoint',
+        distance: 10,
+        start: function(e) {
+            app.dragging = true;
+            app.dispatcher.trigger('wallClick', e);
+        },
     });
     
     // Kick things off by creating the **App**.

@@ -12,11 +12,12 @@ body {
 }
 
 .input {
+    font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
     position:absolute;
     display:none;
     width:380px;
-    padding:0px 13px 2px 11px;
-    margin-top:-1px;
+    padding:2px 0px 0px 5px;
+    margin:-2px 0px 0px -6px;
 	height:auto;
 	overflow:hidden;
 	resize:none;
@@ -25,9 +26,9 @@ body {
 
 .mark {
     position:absolute;
-    z-index:10;
     cursor:pointer;
-/*    border:1px dotted green;*/
+    z-index:10;
+    border-radius:2px;
 }
 
 label {
@@ -69,15 +70,24 @@ button {
 
 .trash-can {
     position:fixed;
-    width:90px;
-    height:90px;
-    margin-top:85%;
-    margin-left:89%;
+    width:86px;
+    height:86px;
+    right:0;
+    bottom:0;
     background-image:url('../images/trash.png');
-    background-size:90px 90px;
+    background-repeat:no-repeat;
     z-index:1;
+    opacity:0.6;
 }
 
 .active-trash-can {
-    background-image:url('../images/active-trash.png');
+    opacity:1;
+}
+
+.ui-selected, .ui-selecting {
+    box-shadow:0px 0px 3px 1px orange;
+}
+
+.ui-disabled {
+    background-image:url('../images/trash.png');
 }

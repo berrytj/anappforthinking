@@ -11,17 +11,20 @@
 	    <div id="menu-background-gradient" class="menu-base"></div>
         <div id="menu-background" class="menu-base"></div>
         <div id="menu" class="menu-base">
-            <span id="main-menu-button"><a id="main-menu-link" href="/">&larr;</a></span>
+            <span id="main-menu-button">
+                <a id="main-menu-link" href="/">&larr;</a>
+            </span>
             <span id="wall-title">{{ wall.title }}</span>
-            <span id="zoom-in" class="menu-button">zoom in</span>
-            <span id="zoom-out" class="menu-button">zoom out</span>
-            <span id="undo-button" class="menu-button">undo</span>
-            <span id="redo-button" class="menu-button">redo</span>
+            <span id="zoom-in" class="menu-button">zoom in&nbsp;&nbsp;&nbsp;&nbsp;|</span>
+            <span id="zoom-out" class="menu-button">&nbsp;&nbsp;&nbsp;&nbsp;zoom out</span>
+            <span id="undo-button" class="menu-button">undo&nbsp;&nbsp;&nbsp;&nbsp;|</span>
+            <span id="redo-button" class="menu-button">&nbsp;&nbsp;&nbsp;&nbsp;redo</span>
         </div>
     </div>
 	
 	
 	<div id='wall'>
+	    <div id='drag-container'></div>
 	    <textarea id='input' class='input'></textarea>
 	    <textarea id="waypoint-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
 	</div>

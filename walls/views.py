@@ -19,7 +19,7 @@ def wall(request, pk):
     if(w.user == request.user):
         return render(request, 'walls/wall.html', { 'wall': w, 'username': request.user.username })
     else:
-        return render(request, 'walls/index.html')
+        return HttpResponseRedirect(reverse('walls.views.index'))
 
 def newWall(request):
     '''Creates a new wall, given a title.'''
