@@ -3,21 +3,30 @@
 // There may be some lingering code from an example that I was learning from: addyosmani.github.com/todomvc/
 
 var app = app || {};
+
 var ENTER_KEY = 13;
 var UP_KEY = 38;
 var DOWN_KEY = 40;
 var Z_KEY = 90;
+
 var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
+
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
-var TIME = 100;  // Go slower if you can make font size animation less choppy.
-var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
-// Get items for this wall only; don't limit quantity returned (default is 20):
-var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
+
 var INPUT_OFFSET_X = 7;
 var INPUT_OFFSET_Y = 4;
-var WAIT_FOR_DRAG = 130;
 var SPACING = 6;
+
+var LIST_PAUSE = 1500;
+var LIST_ANIMATE = 150;
+var WAIT_FOR_DRAG = 130;
+var TIME = 100;  // Go slower if you can make font size animation less choppy.
+var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
+
+// Get items for this wall only.  Don't limit quantity returned (default is 20).
+var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
+
 
 (function() {
     
@@ -27,7 +36,7 @@ var SPACING = 6;
 	    
 		el: 'body',
         
-		// Delegated events for creating new items, and clearing completed ones.
+		// Delegated events. Switch from mousedown to click for showing input?
 		events: {
 		    'mousedown'               : 'waitThenToggle',
 			'mousedown #input'        : 'doNothing',
@@ -46,14 +55,14 @@ var SPACING = 6;
 			app.dispatcher = _.extend({}, Backbone.Events);  // _.extend adds the latter arg to the former.
 			app.factor = 1;  // Keep track of zoom factor.
 			app.dragging = false;  // Used to distinguish between click and drags.
-			app.mousedown = false;
+			app.mousedown = false;  // So you can disable selector if input appears while mouse is still down.
 			
 			app.dispatcher.on('zoom', this.zoom, this);
 			app.dispatcher.on('undo', this.undo, this);
-			app.dispatcher.on('lineUp', this.lineUp, this);
-			app.dispatcher.on('evenlySpace', this.evenlySpace, this);
+			app.dispatcher.on('list', this.list, this);
 			app.dispatcher.on('clearRedos', this.clearRedos, this);
 			app.dispatcher.on('clearSelected', this.clearSelected, this);
+			app.dispatcher.on('undoMarker', this.undoMarker, this);
 			
 			// Refine this: only check for marks being edited if inputs aren't open.
 			// Don't check inputs again when this is called from within toggleInput.
@@ -78,32 +87,47 @@ var SPACING = 6;
 			this.undoKeys();
 		},
 		
+		undoMarker: function(type) {
+            app.Undos.create({ wall: WALL_URL, type: type });
+        },
+		
+		list: function() {
+		    var $marks = this.lineUp();
+		    if ($marks.length) this.evenlySpace($marks);
+		},
+		
 		lineUp: function() {
 		    var $selectedMarks = this.$('.ui-selected').not('.waypoint');
 		    if($selectedMarks.length) {
 		        // use top one instead of first id?
 		        var x = $selectedMarks.first().offset().left;
 		        $selectedMarks.each(function() {
-		            $(this).offset({ left: x });
-		            $(this).data('view').updateLocation();
+		            $(this).animate({ left: x }, { duration: LIST_ANIMATE, queue: false, complete: function() {
+		                $(this).data('view').updateLocation();
+		            }});
 		        });
 		    }
+		    return $selectedMarks;
 		},
 		
-		evenlySpace: function() {
+		evenlySpace: function($marks) {
 		    
 		    // .get() returns array from jQuery object:
-		    var marks = this.$('.ui-selected').not('.waypoint').get();
+		    var marks = $marks.get();
 		    
 		    // Using insertion sort because array should be mostly sorted:
 		    // marks higher on the screen are likely to have been created first.
-		    for(var i=1; i < marks.length; i++) {
+		    for(var i = 1; i < marks.length; i++) {
 		        var j = i;
-		        while(j > 0) {
-		            var val = $(marks[j]).offset().top;
-		            if(val < $(marks[j-1]).offset().top) {
-		                var temp = marks[j];
-		                marks[j] = marks[j-1];
+		        while(j > 0) {  // Loop through all previous items in the array:
+		            var current = marks[j];
+		            var prev    = marks[j-1];
+		            var y = $(current).offset().top;
+		            if(y < $(prev).offset().top) {
+		                // If current item is has lower y-offset
+		                // than previous item, switch them:
+		                var temp   = current;
+		                marks[j]   = prev;
 		                marks[j-1] = temp;
 		                j--;
 		            } else {
@@ -113,12 +137,19 @@ var SPACING = 6;
 		    }
 		    
 		    // Use recursion here?
-		    // You can pass new_y forward instead of calling $prev.offset().top each time.
-		    for(var i=1; i < marks.length; i++) {
-		        var $prev = $(marks[i-1]);
-		        var new_y = $prev.offset().top + $prev.outerHeight() + SPACING * app.factor;
-		        $(marks[i]).offset({ top: new_y })
-		                   .data('view').updateLocation();
+		    var $prev = $(marks[0]);
+		    var new_y = $prev.offset().top;
+		    var $mark;
+		    
+		    for(var i = 1; i < marks.length; i++) {
+		        // Add previous object y-value, previous object height,
+		        // and spacing to get next object y-value.
+		        new_y += $prev.outerHeight() + SPACING * app.factor;
+                $mark = $(marks[i]);
+		        $mark.animate({ top: new_y }, { duration: LIST_ANIMATE, queue: false, complete: function() {
+		            $(this).data('view').updateLocation();
+		        }});
+		        $prev = $mark;
 		    }
 		    
 		},
@@ -126,17 +157,19 @@ var SPACING = 6;
 		resetDragging: function() {
 		    app.dragging = false;
 		    
-		    // Doesn't work if user mouseup's before timeout ends (which is typical).
 		    app.mousedown = false;
 		    this.$('#wall').selectable('enable');
 		},
 		
 		clearRedos: function() {
-		    app.Redos.each(this.destroyModel, this);
-		},
-		
-		destroyModel: function(model) {
-		    model.destroy();
+		    
+		    var coll  = app.Redos;
+		    var model = coll.pop();
+		    
+            while (model) {
+                model.destroy();
+                model = coll.pop();
+            }
 		},
 		
 		undoKeys: function() {
@@ -151,32 +184,65 @@ var SPACING = 6;
 		
 		undo: function(isRedo) {
 		    
-		    var prev, other;
+		    var thisStack, thatStack;
+		    
 		    if(isRedo) {
-		        prev = app.Redos.pop();
-		        other = app.Undos;
+		        thisStack = app.Redos;
+		        thatStack = app.Undos;
 		    } else {
-		        prev = app.Undos.pop();
-		        other = app.Redos;
+		        thisStack = app.Undos;
+		        thatStack = app.Redos;
 		    }
+		    
+		    var prev = thisStack.pop();
 		    
 		    if(prev) {
 		        
-		        var coll;
+		        if(prev.get('type') === 'group_start') {
+		            
+		            // 'group_end' created first because undos are accessed LIFO:
+		            thatStack.create({ wall: WALL_URL, type: 'group_end' });
+		            
+		            while(true) {
+		                var previous = thisStack.pop();
+		                
+		                // 'previous' should always exist here, but checking just in case:
+		                if(!previous || previous.get('type') === 'group_end') {
+		                    thatStack.create({ wall: WALL_URL, type: 'group_start' });
+		                    break;
+		                }
+		                
+		                this.performUndo(previous, thatStack);
+		            }
+		            
+		        } else {
+		            this.performUndo(prev, thatStack);
+		        }
 		        
-		        if(prev.get('type') === 'mark')
-		            coll = app.Marks;
-		        else if(prev.get('type') === 'waypoint')
-		            coll = app.Waypoints;
+		        console.log(thisStack.length);
+		    
+		    } else {
+		        // This usually gets called after performing undo,
+		        // but should be called even if there's no undo to perform.
+                app.dispatcher.trigger('undoComplete');
+            }
+		    
+		},
+		
+		performUndo: function(prev, thatStack) {
+		        
+		        var coll;
+		        if      (prev.get('type') === 'mark')     coll = app.Marks;
+		        else if (prev.get('type') === 'waypoint') coll = app.Waypoints;
 		        
 		        var obj = coll.get( prev.get('obj_pk') );
 		        
-		        other.create({ wall: WALL_URL,
-                               type: obj.type,
-			                 obj_pk: obj.get('id'),
-			                   text: obj.get('text'),
-			                      x: obj.get('x'),
-			                      y: obj.get('y') });
+		        thatStack.create({ wall: WALL_URL,
+                                   type: obj.type,
+			                     obj_pk: obj.get('id'),
+			                       text: obj.get('text'),
+			                          x: obj.get('x'),
+			                          y: obj.get('y') });
 		        
 		        obj.save({ text: prev.get('text'),
 		                      x: prev.get('x'),
@@ -188,11 +254,6 @@ var SPACING = 6;
 		                 }});
 		        
 		        prev.destroy();
-		        
-            } else {
-                app.dispatcher.trigger('undoComplete');
-            }
-            
 		},
 		
 		checkForZoom: function(e) {
@@ -253,6 +314,7 @@ var SPACING = 6;
             // Page grows/shrinks from right and bottom, so page needs to be recentered.
             
             var $w = $(window);
+            
             // Page movement needs to be calibrated from page center,
             // rather than top-left:
             var current_x_center = $w.scrollLeft() + $w.width()/2;
@@ -301,12 +363,16 @@ var SPACING = 6;
 		
 		waitThenToggle: function(e) {
 		    
+		    // Noted so you can disable selector if
+		    // input appears while mouse is still down:
 		    app.mousedown = true;
 		    
 		    var view = this;
-		    
+		    // Showing the input and dragging both stem from the mousedown event;
+		    // here we're waiting to see if the user drags before showing the input.
+		    // May be removed if we decide to use the click event instead of mousedown.
 		    setTimeout(function() {
-		        if(!app.dragging) view.toggleInput(e);
+		        if (!app.dragging) view.toggleInput(e);
 		    }, WAIT_FOR_DRAG);
 		},
 		
@@ -317,11 +383,11 @@ var SPACING = 6;
 		    
 		    if(!open) {
 		        
-		        if(this.$('.input:visible').length) {
+		        if (this.$('.input:visible').length) {
 		            // Any marks being edited?
 		            app.dispatcher.trigger('wallClick', e);
 		            
-		        } else if(this.$('.ui-selected').length) {
+		        } else if (this.$('.ui-selected').length) {
 		            // Any marks selected?
 		            app.dispatcher.trigger('clearSelected');
 		            
@@ -342,20 +408,22 @@ var SPACING = 6;
 		
 		showInput: function(e, $input) {
 		    
-		    if(app.mousedown)
-		        this.$('#wall').selectable('disable');
+		    // Prevent selector from showing up if input has already appeared:
+		    if (app.mousedown) this.$('#wall').selectable('disable');
 		    
 		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
 		          .width(app.factor * ORIG_INPUT_WIDTH)
 		          .show()
-		          .offset({ left: e.pageX - INPUT_OFFSET_X,
-		                    top:  e.pageY - INPUT_OFFSET_Y });
+		          .offset({
+		               left: e.pageX - INPUT_OFFSET_X,
+		               top:  e.pageY - INPUT_OFFSET_Y
+		           });
 		    
 		    $input.focus();
 		},
 		
 		createMark: function(e) {
-		    // Add these as arguments in 'events' up top?
+		    // Possible to put these arguments in 'events' up top?
 		    this.createObj(e, this.input, app.Marks);
 		},
 		
@@ -368,10 +436,12 @@ var SPACING = 6;
                 var clicking = e.pageX;
 		        var enter = (e.which === ENTER_KEY);
 		        
-		        if(clicking || enter) {
+		        if (clicking || enter) {
+		            
 			        var text = $input.val().trim();
 			        if(text) this.createModel($input, text, coll);
 			        $input.hide();
+			        
 			    }
 		},
 		

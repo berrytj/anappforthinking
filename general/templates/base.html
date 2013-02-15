@@ -3,7 +3,7 @@
 <head>
 	{% block meta %}{% endblock %}
 	<link rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico" />
-	<link href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" rel="stylesheet">
+    <link href="{{STATIC_URL}}lib/jquery-ui/jquery-ui.min.css" rel="stylesheet">
     <link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.css" rel="stylesheet">
     <link href="{{STATIC_URL}}css/base.css" rel="stylesheet">
     {% block style %}{% endblock %}
@@ -24,13 +24,13 @@
        
     <script src="{{ STATIC_URL }}lib/jquery.min.js"></script>
     <script src="{{ STATIC_URL }}lib/lodash.min.js"></script>
-	<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
-	<script src="{{ STATIC_URL }}lib/jquery.autogrowtextarea.js"></script>
+    <script src="{{ STATIC_URL }}lib/jquery-ui/jquery-ui.min.js"> <!-- Customized: CTRL+F 'added by Tom' -->
 	<script src="{{ STATIC_URL }}lib/csrf-protection.js"></script>
 	<script src="{{ STATIC_URL }}lib/bootstrap/js/bootstrap.min.js"></script>
 	<script src="{{ STATIC_URL }}lib/underscore.js"></script>
 	<script src="{{ STATIC_URL }}lib/backbone.js"></script>
     <script src="{{ STATIC_URL }}lib/backbone-localstorage.js"></script>
+    <script src="{{ STATIC_URL }}lib/jquery.autosize.js"></script>
 	
 	{% block scripts %}
 	{% endblock %}

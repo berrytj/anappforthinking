@@ -1,28 +1,30 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block title %}{{ wall.title }}{% endblock %}
 {% block style %}
-    <link href="{{STATIC_URL}}css/wall.css" rel="stylesheet">
-    <link href="{{STATIC_URL}}css/toolbar.css" rel="stylesheet">
-    <link href="{{STATIC_URL}}css/waypoints.css" rel="stylesheet">
+    <link href='{{STATIC_URL}}css/wall.css'      rel='stylesheet'>
+    <link href='{{STATIC_URL}}css/toolbar.css'   rel='stylesheet'>
+    <link href='{{STATIC_URL}}css/waypoints.css' rel='stylesheet'>
 {% endblock %}
 {% block body %}
     
-    <div id="toolbar">
-	    <div id="menu-background-gradient" class="menu-base"></div>
-        <div id="menu-background"          class="menu-base"></div>
-        <div id="menu"                     class="menu-base">
+    <div id='toolbar'>
+	    <div id='menu-background-gradient' class='menu-base'></div>
+        <div id='menu-background'          class='menu-base'></div>
+        <div id='menu'                     class='menu-base'>
             
-            <span id="main-menu-button">
-                <a id="main-menu-link" href="/">&larr;</a>
+            <span id='main-menu-button'>
+                <a id='main-menu-link' href='/'>&larr;</a>
             </span>
             
-            <span id="wall-title">{{ wall.title }}</span>
-            <span id="line-up"      class="menu-button">line up&nbsp;&nbsp;&nbsp;&nbsp;|</span>
-            <span id="evenly-space" class="menu-button">&nbsp;&nbsp;&nbsp;&nbsp;evenly space</span>
-            <span id="zoom-in"      class="menu-button">zoom in&nbsp;&nbsp;&nbsp;&nbsp;|</span>
-            <span id="zoom-out"     class="menu-button">&nbsp;&nbsp;&nbsp;&nbsp;zoom out</span>
-            <span id="undo-button"  class="menu-button">undo&nbsp;&nbsp;&nbsp;&nbsp;|</span>
-            <span id="redo-button"  class="menu-button">&nbsp;&nbsp;&nbsp;&nbsp;redo</span>
+            <span id='wall-title'>{{ wall.title }}</span>
+            <span id='buttons'>
+              <span class='menu-button bar'>|||</span> <span id='redo-button' class='menu-button'>redo</span>
+              <span class='menu-button bar'>|</span>   <span id='undo-button' class='menu-button'>undo</span>
+              <span class='menu-button bar'>|||</span> <span id='zoom-out'    class='menu-button'>zoom out</span>
+              <span class='menu-button bar'>|</span>   <span id='zoom-in'     class='menu-button'>zoom in</span>
+              <span class='menu-button bar'>|||</span> <span id='list-button' class='menu-button button-disabled'>list</span>
+              <span class='menu-button bar'>|||</span>
+            </span>
             
         </div>
     </div>
@@ -30,23 +32,23 @@
 	
 	<div id='wall'>
 	    <div id='drag-container'></div>
-	    <textarea id='input' class='input'></textarea>
-	    <textarea id="waypoint-input" maxlength="22" name="waypoint" class="waypoint" style="display:none;"></textarea>
+	    <textarea id='input' class='input' spellcheck='false'></textarea>
+	    <textarea id='waypoint-input' maxlength='22'     name='waypoint'
+	              class='waypoint'    spellcheck='false' style='display:none;'></textarea>
 	</div>
 	
 	<div id='trash-can' class='trash-can'></div>
 	
-	<div id="waypoint-tags">
-		<span id="add-waypoint" class="waypoint-tag"> + </span>
-		<span id="hide-tags">&laquo;</span>
+	<div id='waypoint-tags'>
+		<span id='add-waypoint' class='waypoint-tag'> + </span>
+		<span id='hide-tags'>&laquo;</span>
     </div>
 	
 	
 	<script type='text/template' id='mark-template'>
         
-        <textarea class='input'></textarea>
+        <textarea class='input' spellcheck='false'></textarea>
         
-<!--	<div class="bullet">&there4;</div>  -->
 		<div class='labelBlock'>	
 			<label><%- text %></label>
 		</div>
@@ -70,24 +72,24 @@
 -->
 
 <script>
-var username = "{{ username }}";
-var wall_id = "{{ wall.id }}";
+var username = '{{ username }}';
+var wall_id  = '{{ wall.id }}';
 </script>
 
 {% endblock %}
 {% block scripts %}
 
-<script src="{{STATIC_URL}}js/models/tastypie.js"></script>
-<script src="{{STATIC_URL}}js/models/models.js"></script>
-<script src="{{STATIC_URL}}js/collections/tastypie.js"></script>
-<script src="{{STATIC_URL}}js/collections/collections.js"></script>
-<script src="{{STATIC_URL}}js/views/app.js"></script>
-<script src="{{STATIC_URL}}js/views/object.js"></script>
-<script src="{{STATIC_URL}}js/views/mark.js"></script>
-<script src="{{STATIC_URL}}js/views/waypoint.js"></script>
-<script src="{{STATIC_URL}}js/views/toolbar.js"></script>
-<script src="{{STATIC_URL}}js/views/waypoint-tags.js"></script>
-<script src="{{STATIC_URL}}js/views/tag.js"></script>
-<script src="{{STATIC_URL}}js/walls.js"></script>
+<script src='{{STATIC_URL}}js/models/tastypie.js'></script>
+<script src='{{STATIC_URL}}js/models/models.js'></script>
+<script src='{{STATIC_URL}}js/collections/tastypie.js'></script>
+<script src='{{STATIC_URL}}js/collections/collections.js'></script>
+<script src='{{STATIC_URL}}js/views/app.js'></script>
+<script src='{{STATIC_URL}}js/views/object.js'></script>
+<script src='{{STATIC_URL}}js/views/mark.js'></script>
+<script src='{{STATIC_URL}}js/views/waypoint.js'></script>
+<script src='{{STATIC_URL}}js/views/toolbar.js'></script>
+<script src='{{STATIC_URL}}js/views/waypoint-tags.js'></script>
+<script src='{{STATIC_URL}}js/views/tag.js'></script>
+<script src='{{STATIC_URL}}js/walls.js'></script>
 
 {% endblock %}

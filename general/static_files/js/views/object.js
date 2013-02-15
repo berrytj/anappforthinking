@@ -30,65 +30,93 @@ var app = app || {};
 			this.$el.data('view', this);
 		},
         
+        initializeElement: function() {
+            
+            var view = this;
+            
+            this.$el.html( this.template( this.model.toJSON() ) )
+			        .offset({
+			            left: this.model.get('x') * app.factor,
+			            top:  this.model.get('y') * app.factor
+			         })
+			        .draggable({
+                        start: function(e, ui) {
+                            
+                            // To prevent input field from opening due to mousedown:
+                            app.dragging = true;
+                            
+                            // To prevent mark from going into edit mode
+                            // once the drag ends / mouse is lifted:
+                            $(this).addClass('dragged');
+                            
+                            if($(this).hasClass('ui-selected')) {
+                                
+                                $('.ui-selected').each(function() {
+                                    var pos = $(this).offset();
+                                    $(this).data({
+                                        'x': pos.left - ui.position.left,
+                                        'y': pos.top  - ui.position.top
+                                    });
+                                });
+                                
+                            } else {
+                                app.dispatcher.trigger('clearSelected');
+                            }
+                        },
+                        drag: function(e, ui) {
+                            if($(this).hasClass('ui-selected')) {
+                                $('.ui-selected').each(function() {
+                                    $(this).css({
+                                        left: $(this).data('x') + ui.position.left,
+                                        top:  $(this).data('y') + ui.position.top
+                                    });
+                                });
+                            }
+                        },
+                        stop: function() {
+                            if($(this).hasClass('ui-selected')) {
+                                // 'group_end' comes first because undos are accessed LIFO:
+                                app.dispatcher.trigger('undoMarker', 'group_end');
+                                $('.ui-selected').each(function() {
+                                    view.afterDragging( $(this) );
+                                });
+                                app.dispatcher.trigger('undoMarker', 'group_start');
+                            } else {
+                                view.afterDragging( $(this) );
+                            }
+                        },
+			});
+            
+        },
+        
 		// Render the mark.
 		render: function() {
 		    
+		    var onPage = this.$el.parents().length;
+		    
 		    if(this.model.get('text') === '') {
-		        this.$el.html('');
-		        this.$el.css('box-shadow', 'none');
+		        
+		        if(onPage) this.$el.remove();
+		        
 		    } else {
 		        
-		        var view = this;
-			    this.$el.html(this.template(this.model.toJSON()))
-			            .offset({ left: this.model.get('x') * app.factor,
-			                      top:  this.model.get('y') * app.factor })
-			            .draggable({
-			                revertDuration: 10,  // What is this? grouped items animate separately, so leave this number low
-                            start: function(e, ui) {
-                                
-                                app.dragging = true;
-                                $(this).addClass('dragged');
-                                
-                                if($(this).hasClass('ui-selected')) {
-                                    
-                                    $('.ui-selected').each(function() {
-                                        var pos = $(this).offset();
-                                        $(this).data({ 'x': pos.left - ui.position.left,
-                                                       'y': pos.top  - ui.position.top });
-                                    });
-                                    
-                                } else {
-                                    app.dispatcher.trigger('clearSelected');
-                                }
-                            },
-                            drag: function(e, ui) {
-                                if($(this).hasClass('ui-selected')) {
-                                    $('.ui-selected').each(function() {
-                                        $(this).css({ left: $(this).data('x') + ui.position.left,
-                                                      top:  $(this).data('y') + ui.position.top });
-                                    });
-                                }
-                            },
-                            stop: function() {
-                                if($(this).hasClass('ui-selected')) {
-                                    $('.ui-selected').each(function() {
-                                        view.afterDragging( $(this) );
-                                    });
-                                } else {
-                                    view.afterDragging( $(this) );
-                                }
-                            },
-			    });
-			    
+		        if(!onPage) $('#wall').append(this.el);
+		        this.initializeElement();
 			    this.zoomSize();
-            
+                
             }
+            
+            // Return view so you can chain this function,
+            // e.g. so you can say 'append(view.render().el)'.
 			return this;
 		},
 		
 		afterDragging: function($obj) {
-//		    if($obj.hasClass('dropped')) $obj.removeClass('dropped');
-            $obj.data('view').updateLocation();
+		    // Don't update location if object was dropped in
+		    // the trash (and removed from the wall). If undone,
+		    // object will show in its pre-trashed location.
+		    if($obj.hasClass('dropped')) $obj.removeClass('dropped');
+            else $obj.data('view').updateLocation();
 		},
 		
 		zoom: function(new_width, new_height) {
@@ -103,16 +131,20 @@ var app = app || {};
 		
 		updateLocation: function() {
 		    var loc = this.$el.offset();
-//		    this.createUndo();
-		    this.model.save({ x: loc.left / app.factor,
-		                      y: loc.top  / app.factor });
+		    this.createUndo();
+		    this.model.save({
+		        x: loc.left / app.factor,
+		        y: loc.top  / app.factor
+		    }, { silent: true });  // Silent because element has already been moved,
+		                           // so it doesn't need to be re-rendered (which
+		                           // causes micro-movements).
 		},
 		
 		cleanup: function(e) {
 		    e.stopPropagation();
 		    app.dispatcher.trigger('wallClick', e);
-            // Need this?
-//		    this.$el.removeClass('dragged');
+		    // Free the element to be edited next time it gets clicked:
+		    this.$el.removeClass('dragged');
 		},
 		
 		createUndo: function() {
@@ -128,7 +160,7 @@ var app = app || {};
 		},
 		
 		clear: function() {
-//		    this.createUndo();
+		    this.createUndo();
 		    this.model.save({ text: '' });
 		},
 		

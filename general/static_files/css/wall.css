@@ -12,15 +12,19 @@ body {
 }
 
 .input {
-    font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
     position:absolute;
     display:none;
-    width:380px;
-    padding:2px 0px 0px 5px;
+    
+    padding:1px 0px 5px 5px;
     margin:-2px 0px 0px -6px;
+	
 	height:auto;
 	overflow:hidden;
 	resize:none;
+	
+	font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+    line-height:140%;
+	
 	z-index:10000;
 }
 
@@ -87,8 +91,14 @@ button {
 
 .ui-selected, .ui-selecting {
     box-shadow:0px 0px 3px 1px orange;
+/*    rgba(229,210,167,1) rgba(183,144,33,1)*/
 }
 
 .ui-state-disabled {
     opacity:1;
+}
+
+.ui-selectable-helper {
+    border:1px solid #FFFFFF;
+    background-color:rgba(255,255,255,0.25);
 }

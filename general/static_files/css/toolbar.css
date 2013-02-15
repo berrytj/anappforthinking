@@ -37,20 +37,16 @@
     cursor:default;
     position:fixed;
     top:0px;
-	margin-left:29%;
+	margin-left:24%;
 	
 	font-size:18px;
     font-weight:bold;
     letter-spacing:1px;
     font-family:futura;
 	text-rendering: optimizeLegibility;
+	font-smoothing: antialiased;
 	
-    background-color:#000000;
-    color:transparent;
-    text-shadow:0px 1px 1px rgba(255,255,255,0.2);
-    -webkit-background-clip:text;
-    -moz-background-clip:text;
-    background-clip:text;
+	color:#111111;
 }
 
 #main-menu-button {
@@ -76,10 +72,10 @@
 
 .menu-button {
     cursor:pointer;
-    position:fixed;
-    top:3px;
+    float:right;
+    padding:0 4.5%;
     
-    font-size:14px;
+    font-size:13px;
     font-weight:bold;
 	
 	background-color:#111111;
@@ -90,11 +86,22 @@
     background-clip:text;
 }
 
-#line-up     { margin-left:43.8%; }
-#evenly-space{ margin-left:48.9%; }
+.bar {
+    cursor:default;
+    padding:0;
+}
 
-#zoom-in     { margin-left:64%;   }
-#zoom-out    { margin-left:69.8%; }
+.button-disabled {
+    cursor:default;
+    color:#888888;
+    text-shadow:none;
+    background-color:transparent;
+    -webkit-font-smoothing:antialiased;
+}
 
-#undo-button { margin-left:83.2%; }
-#redo-button { margin-left:87.5%; }
+#buttons {
+    position:fixed;
+    width:70%;
+    top:3px;
+    right:3%;
+}

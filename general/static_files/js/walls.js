@@ -3,24 +3,37 @@ var app = app || {};
 // Document Ready
 // --------------
 
+function afterDrop($obj) {
+    // Specify so view doesn't update its location after dragging:
+    $obj.addClass('dropped');
+    
+    $obj.data('view').clear();
+}
+
 $(function() {
     
-    // Move these into app.js?
+    // Kick things off by creating the **App**.
+	new app.AppView();
     
-    $('.input').autoGrow();
+    // Move these into app.js?
     
     $('#trash-can').droppable({
         accept: '.ui-draggable',
         hoverClass: 'active-trash-can',
         tolerance: 'pointer',
         drop: function(e, ui) {
-            if(ui.draggable.hasClass('ui-selected')) {
+            if (ui.draggable.hasClass('ui-selected')) {
+                
+                app.dispatcher.trigger('undoMarker', 'group_end');
+                
                 $('.ui-selected').each(function() {
-                    $(this).data('view').clear();
+                    afterDrop($(this));
                 });
+                
+                app.dispatcher.trigger('undoMarker', 'group_start');
+                
             } else {
-//              ui.draggable.addClass('dropped');
-                ui.draggable.data('view').clear();
+                afterDrop(ui.draggable);
             }
         }
     });
@@ -29,13 +42,17 @@ $(function() {
         filter: '.mark, .waypoint:not(#waypoint-input)',
         distance: 10,
         start: function(e) {
-            app.dragging = true;
+            // Modified jquery-ui source to add-to-selection when holding shift.
+            // (Add-to-selection is default behavior when holding cmd / ctrl.)
+            app.dragging = true;  // To prevent input field from opening due to mousedown.
             app.dispatcher.trigger('wallClick', e);
+            // Update to avoid triggering this when shift-selecting:
+            app.dispatcher.trigger('enableList', false);
+        },
+        stop: function() {
+            if ($('.ui-selected').length) app.dispatcher.trigger('enableList', true);
         },
     });
-    
-    // Kick things off by creating the **App**.
-	new app.AppView();
 	
 });
 

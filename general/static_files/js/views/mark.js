@@ -7,6 +7,7 @@ var MARK_PADDING = 6;
 var PRIMARY_FONT_SIZE = 14;
 var ORIG_MAX_WIDTH = 370;
 var ORIG_INPUT_WIDTH = 380;
+var SINGLE_ROW_HEIGHT = 25;
 var X_FACTOR = 1.3;
 
 (function() {
@@ -55,23 +56,40 @@ var X_FACTOR = 1.3;
 			this.$el.width(labelWidth + this.$('.destroy').width() + app.factor * MARK_PADDING);
 		},
 
-		// Switch this view into 'editing' mode, displaying the input field.
+		// Switch this view into 'editing'
+		// mode, displaying the input field:
 		edit: function(e) {
 		    
 		    var $mark = this.$el;
+		    
 		    if($mark.hasClass('dragged')) {
+		        // Don't edit if the mouseup comes
+		        // at the end of a drag operation:
 		        $mark.removeClass('dragged');
+		        
+		    } else if (e.shiftKey) {
+		        
+		        $mark.toggleClass('ui-selected');
+		        
 		    } else {
 		        
 		        app.dispatcher.trigger('clearSelected');
 		        
+		        var width;
+		        var height = $mark.height();
+		        
+		        if (height < SINGLE_ROW_HEIGHT)
+		            width = ORIG_INPUT_WIDTH;
+		        else
+		            width = this.$('.labelBlock').width();
+		        
 		        this.$('.input').css('font-size', app.factor * PRIMARY_FONT_SIZE)
-		                        .width(app.factor * ORIG_INPUT_WIDTH)
+		                        .width(width)
+		                        .height(height)
 		                        .show()
-		                        .autoGrow()  // Just call once on all '.input' at the beginning?
 		                        .focus()
 		                        .val(this.model.get('text'))
-		                        .height($mark.height());  // Add a little padding on the height?
+		                        .autosize();  // Call on all inputs at the beginning?
 		    }
 		},
 		
