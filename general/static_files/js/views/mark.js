@@ -7,8 +7,11 @@ var MARK_PADDING = 6;
 var PRIMARY_FONT_SIZE = 14;
 var ORIG_MAX_WIDTH = 370;
 var ORIG_INPUT_WIDTH = 380;
+var ORIG_INPUT_HEIGHT = 38;
 var SINGLE_ROW_HEIGHT = 25;
 var X_FACTOR = 1.3;
+var TOP_INDEX = 9995;  // Toolbar is a z-index 9999.
+var BOTTOM_INDEX = 10;
 
 (function() {
     
@@ -67,23 +70,31 @@ var X_FACTOR = 1.3;
 		        // at the end of a drag operation:
 		        $mark.removeClass('dragged');
 		        
-		    } else if (e.shiftKey) {
+		    } else if (e.shiftKey || e.metaKey || e.ctrlKey) {
 		        
 		        $mark.toggleClass('ui-selected');
 		        
-		    } else {
+		        // At least two marks must be selected for 'list' function to work:
+		        var selected_count = $('.ui-selected').not('.waypoint').length;
+		        
+		        if (selected_count >= 2) app.dispatcher.trigger('enableList', true);
+		        else                     app.dispatcher.trigger('enableList', false);
+		        
+		    } else {  // Actually edit the mark:
 		        
 		        app.dispatcher.trigger('clearSelected');
 		        
-		        var width;
 		        var height = $mark.height();
+		        var width;
 		        
-		        if (height < SINGLE_ROW_HEIGHT)
-		            width = ORIG_INPUT_WIDTH;
-		        else
-		            width = this.$('.labelBlock').width();
+		        // Show input at full width even if mark is just a few words:
+		        if (height < SINGLE_ROW_HEIGHT) width = ORIG_INPUT_WIDTH;
+		        else                            width = this.$('.labelBlock').width();
 		        
-		        this.$('.input').css('font-size', app.factor * PRIMARY_FONT_SIZE)
+		        // Make sure input shows above other marks:
+		        this.$el.css('z-index', TOP_INDEX);
+		        
+		        this.$('.input').css({ 'font-size': app.factor * PRIMARY_FONT_SIZE })
 		                        .width(width)
 		                        .height(height)
 		                        .show()
@@ -101,21 +112,32 @@ var X_FACTOR = 1.3;
 		        
 		        var clicking = e.pageX;
 		        var enter = (e.which == ENTER_KEY);
-		        if(clicking || enter) {
+		        
+		        if (clicking || enter) {  // Don't finish editing based on non-enter keypresses, of course.
 		        
 		            var $input = this.$('.input');
-		            if($input.is(':visible')) {
 		            
+		            if ($input.is(':visible')) {
+		                
+		                // Mark was raised for editing;
+		                // move back to normal position:
+		                this.$el.css('z-index', BOTTOM_INDEX);
+		                
 			            var text = $input.val().trim();
 			            
 			            if(text) {
-			                if(this.model.get('text') !== text) {
+			                
+			                if (this.model.get('text') !== text) {  // If text actually changed:
 			                    this.createUndo();
-			                    this.model.save({ text: text });
+			                    // Change model silently and just update
+			                    // label text rather than re-rendering mark:
+			                    this.model.save({ text: text }, { silent: true });
+			                    this.$('label').text(text);
 			                }
 			                $input.hide();
+			                
 			            } else {
-			                this.clear();
+			                this.clear();  // Clear mark if saved with no text.
 			            }
 			        }
 			    }

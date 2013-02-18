@@ -13,6 +13,7 @@ var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
 
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
+var MAX_FACTOR = 160;
 
 var INPUT_OFFSET_X = 7;
 var INPUT_OFFSET_Y = 4;
@@ -50,6 +51,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		initialize: function() {
 			
 			this.input = this.$('#input');  // Cache input field (accessed frequently).
+			this.input.autosize();
 			this.keyDown = false;  // Used to prevent multiple zooms from holding down arrow keys.
 			
 			app.dispatcher = _.extend({}, Backbone.Events);  // _.extend adds the latter arg to the former.
@@ -68,18 +70,22 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			// Don't check inputs again when this is called from within toggleInput.
 			app.dispatcher.on('wallClick', this.hideInputs, this);
 			
-			// Does calling window before app change anything?
-			window.app.Marks.on('add',   this.createViewForModel, this);
-			window.app.Marks.on('reset', this.addMarks, this);
+			app.Marks.on('add', this.createViewForModel, this);
+			app.Marks.on('reset', this.addMarks, this);
 			
-			window.app.Waypoints.on('add',   this.createViewForModel, this);
-			window.app.Waypoints.on('reset', this.addWaypoints, this);
+			app.Waypoints.on('add', this.createViewForModel, this);
+			app.Waypoints.on('reset', this.addWaypoints, this);
 			
 			// Fetching calls 'reset' on Marks collection.
 			app.Marks.fetch(FETCH_OPTS);
 			app.Waypoints.fetch(FETCH_OPTS);
 			app.Undos.fetch(FETCH_OPTS);
-			app.Redos.fetch(FETCH_OPTS);
+			app.Redos.fetch({
+			    data: { wall__id: wall_id, limit: 0 },
+			    success: function(coll) {
+			        if (!coll.length) app.dispatcher.trigger('redosEmpty');
+			    }
+			});
 			
 			var toolbar = new app.ToolbarView();
 			var waypoint_tags = new app.WaypointTagsView();
@@ -87,256 +93,21 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			this.undoKeys();
 		},
 		
-		undoMarker: function(type) {
-            app.Undos.create({ wall: WALL_URL, type: type });
-        },
-		
-		list: function() {
-		    var $marks = this.lineUp();
-		    if ($marks.length) this.evenlySpace($marks);
-		},
-		
-		lineUp: function() {
-		    var $selectedMarks = this.$('.ui-selected').not('.waypoint');
-		    if($selectedMarks.length) {
-		        // use top one instead of first id?
-		        var x = $selectedMarks.first().offset().left;
-		        $selectedMarks.each(function() {
-		            $(this).animate({ left: x }, { duration: LIST_ANIMATE, queue: false, complete: function() {
-		                $(this).data('view').updateLocation();
-		            }});
-		        });
-		    }
-		    return $selectedMarks;
-		},
-		
-		evenlySpace: function($marks) {
-		    
-		    // .get() returns array from jQuery object:
-		    var marks = $marks.get();
-		    
-		    // Using insertion sort because array should be mostly sorted:
-		    // marks higher on the screen are likely to have been created first.
-		    for(var i = 1; i < marks.length; i++) {
-		        var j = i;
-		        while(j > 0) {  // Loop through all previous items in the array:
-		            var current = marks[j];
-		            var prev    = marks[j-1];
-		            var y = $(current).offset().top;
-		            if(y < $(prev).offset().top) {
-		                // If current item is has lower y-offset
-		                // than previous item, switch them:
-		                var temp   = current;
-		                marks[j]   = prev;
-		                marks[j-1] = temp;
-		                j--;
-		            } else {
-		                break;
-		            }
-		        }
-		    }
-		    
-		    // Use recursion here?
-		    var $prev = $(marks[0]);
-		    var new_y = $prev.offset().top;
-		    var $mark;
-		    
-		    for(var i = 1; i < marks.length; i++) {
-		        // Add previous object y-value, previous object height,
-		        // and spacing to get next object y-value.
-		        new_y += $prev.outerHeight() + SPACING * app.factor;
-                $mark = $(marks[i]);
-		        $mark.animate({ top: new_y }, { duration: LIST_ANIMATE, queue: false, complete: function() {
-		            $(this).data('view').updateLocation();
-		        }});
-		        $prev = $mark;
-		    }
-		    
-		},
-		
-		resetDragging: function() {
-		    app.dragging = false;
-		    
-		    app.mousedown = false;
-		    this.$('#wall').selectable('enable');
-		},
-		
-		clearRedos: function() {
-		    
-		    var coll  = app.Redos;
-		    var model = coll.pop();
-		    
-            while (model) {
-                model.destroy();
-                model = coll.pop();
-            }
-		},
-		
-		undoKeys: function() {
-		    var view = this;
-		    $(document).keydown(function(e) {
-		        if(e.which === Z_KEY && e.metaKey && e.shiftKey)
-			        view.undo(true);
-		        else if(e.which === Z_KEY && e.metaKey)
-			        view.undo(false);
-	        });
-		},
-		
-		undo: function(isRedo) {
-		    
-		    var thisStack, thatStack;
-		    
-		    if(isRedo) {
-		        thisStack = app.Redos;
-		        thatStack = app.Undos;
-		    } else {
-		        thisStack = app.Undos;
-		        thatStack = app.Redos;
-		    }
-		    
-		    var prev = thisStack.pop();
-		    
-		    if(prev) {
-		        
-		        if(prev.get('type') === 'group_start') {
-		            
-		            // 'group_end' created first because undos are accessed LIFO:
-		            thatStack.create({ wall: WALL_URL, type: 'group_end' });
-		            
-		            while(true) {
-		                var previous = thisStack.pop();
-		                
-		                // 'previous' should always exist here, but checking just in case:
-		                if(!previous || previous.get('type') === 'group_end') {
-		                    thatStack.create({ wall: WALL_URL, type: 'group_start' });
-		                    break;
-		                }
-		                
-		                this.performUndo(previous, thatStack);
-		            }
-		            
-		        } else {
-		            this.performUndo(prev, thatStack);
-		        }
-		        
-		        console.log(thisStack.length);
-		    
-		    } else {
-		        // This usually gets called after performing undo,
-		        // but should be called even if there's no undo to perform.
-                app.dispatcher.trigger('undoComplete');
-            }
-		    
-		},
-		
-		performUndo: function(prev, thatStack) {
-		        
-		        var coll;
-		        if      (prev.get('type') === 'mark')     coll = app.Marks;
-		        else if (prev.get('type') === 'waypoint') coll = app.Waypoints;
-		        
-		        var obj = coll.get( prev.get('obj_pk') );
-		        
-		        thatStack.create({ wall: WALL_URL,
-                                   type: obj.type,
-			                     obj_pk: obj.get('id'),
-			                       text: obj.get('text'),
-			                          x: obj.get('x'),
-			                          y: obj.get('y') });
-		        
-		        obj.save({ text: prev.get('text'),
-		                      x: prev.get('x'),
-		                      y: prev.get('y') },
-		                 { success: function() {
-		                        // Trigger here because 'save' took longest in trials, but check
-		                        // for create/destroy to complete as well to be extra safe?
-		                        app.dispatcher.trigger('undoComplete');
-		                 }});
-		        
-		        prev.destroy();
-		},
-		
-		checkForZoom: function(e) {
-		    
-		    if(!this.keyDown) {  // Prevent multiple zooms from holding down arrow keys.
-		        
-		        this.keyDown = true;
-		        
-		        var view = this;
-		        $(window).keyup(function() {
-		            view.keyDown = false;
-		            $(window).unbind('keyup');
-		        });
-		        
-		        // Determine relative zoom factor:
-		        var rel_factor;
-		        if(e.which === UP_KEY) {
-		            e.preventDefault();
-		            rel_factor = ZOOM_IN_FACTOR;
-		            this.zoom(rel_factor);
-		        } else if(e.which === DOWN_KEY) {
-		            e.preventDefault();
-		            rel_factor = ZOOM_OUT_FACTOR;
-		            this.zoom(rel_factor);
-		        }
-		        
-		    } else if(e.which === UP_KEY || e.which === DOWN_KEY) {
-		        e.preventDefault();  // Prevent arrow keys from panning the window up and down.
-		    }
-		},
-		
-		zoom: function(rel_factor) {
-		    
-		    // Calculate new page size:
-		    var new_width  = $('#wall').width()  * rel_factor;
-            var new_height = $('#wall').height() * rel_factor;
-            
-            // Don't shrink page below window size:
-            if( new_width  > $(window).width() &&
-                new_height > $(window).height() ) {
-                
-                // Update absolute zoom factor:
-                app.factor *= rel_factor;
-                
-                // Zoom marks and zoom page.
-                app.dispatcher.trigger('zoomObjects', new_width, new_height);
-                this.resizePage(new_width, new_height);
-		        this.recenterWindow(rel_factor);
-		    }
-		},
-		
-		resizePage: function(new_width, new_height) {
-		    $('#wall').animate({ width:  new_width  }, ANIM_OPTS);
-            $('#wall').animate({ height: new_height }, ANIM_OPTS);
-		},
-        
-        recenterWindow: function(rel_factor) {
-            // Page grows/shrinks from right and bottom, so page needs to be recentered.
-            
-            var $w = $(window);
-            
-            // Page movement needs to be calibrated from page center,
-            // rather than top-left:
-            var current_x_center = $w.scrollLeft() + $w.width()/2;
-            var new_x_center = rel_factor * current_x_center;
-            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 }, ANIM_OPTS);
-            
-            var current_y_center = $w.scrollTop() + $w.height()/2;
-            var new_y_center = rel_factor * current_y_center;
-            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 }, ANIM_OPTS);
-        },
-        
 		createViewForModel: function(model) {
 			
 			var view;
-			
 			if(model.type === 'mark')
 			    view = new app.MarkView({ model: model });
 			else if(model.type === 'waypoint')
 			    view = new app.WaypointView({ model: model });
 			
-			this.$('#wall').append(view.el);
-			view.render();
+			if (model.get('text')) {
+			    
+			    this.$('#wall').append(view.el);
+			    
+			    // Render after appending so 'shrinkwrap' works appropriately:
+			    view.render();
+			}
 		},
 		
 		addMarks:     function() { app.Marks.each(this.createViewForModel, this); },
@@ -413,6 +184,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    
 		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
 		          .width(app.factor * ORIG_INPUT_WIDTH)
+		          .height(app.factor * ORIG_INPUT_HEIGHT)
 		          .show()
 		          .offset({
 		               left: e.pageX - INPUT_OFFSET_X,
@@ -424,14 +196,14 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		createMark: function(e) {
 		    // Possible to put these arguments in 'events' up top?
-		    this.createObj(e, this.input, app.Marks);
+		    this.prepareModel(e, this.input, app.Marks);
 		},
 		
 		createWaypoint: function(e) {
-		    this.createObj(e, this.$('#waypoint-input'), app.Waypoints);
+		    this.prepareModel(e, this.$('#waypoint-input'), app.Waypoints);
 		},
 		
-		createObj: function(e, $input, coll) {
+		prepareModel: function(e, $input, coll) {
                 
                 var clicking = e.pageX;
 		        var enter = (e.which === ENTER_KEY);
@@ -439,13 +211,13 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		        if (clicking || enter) {
 		            
 			        var text = $input.val().trim();
-			        if(text) this.createModel($input, text, coll);
+			        if(text) this.createModel($input, coll, text);
 			        $input.hide();
 			        
 			    }
 		},
 		
-		createModel: function($input, text, coll) {
+		createModel: function($input, coll, text) {
 		    
 		    var loc = $input.offset();
 			var attributes = { wall: WALL_URL,
@@ -470,6 +242,286 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			
 			app.dispatcher.trigger('clearRedos');
 		},
+		
+		undoMarker: function(type) {
+            app.Undos.create({ wall: WALL_URL, type: type });
+        },
+		
+		list: function() {
+		    var $marks = this.lineUp();
+		    if ($marks.length) {
+		        app.dispatcher.trigger('undoMarker', 'group_end');
+		        // Could this be called before undoMarker is finished saving?
+		        this.evenlySpace($marks);
+		    }
+		},
+		
+		lineUp: function() {
+		    var $selectedMarks = this.$('.ui-selected').not('.waypoint');
+		    if($selectedMarks.length) {
+		        // use top one instead of first id?
+		        var x = $selectedMarks.first().offset().left;
+		        $selectedMarks.each(function() {
+		            $(this).animate({ left: x }, { duration: LIST_ANIMATE, queue: false });
+		        });
+		    }
+		    return $selectedMarks;
+		},
+		
+		evenlySpace: function($marks) {
+		    
+		    // .get() returns array from jQuery object:
+		    var marks = $marks.get();
+		    
+		    // Using insertion sort because array should be mostly sorted:
+		    // marks higher on the screen are likely to have been created first.
+		    for(var i = 1; i < marks.length; i++) {
+		        var j = i;
+		        while(j > 0) {  // Loop through all previous items in the array:
+		            var current = marks[j];
+		            var prev    = marks[j-1];
+		            var y = $(current).offset().top;
+		            if(y < $(prev).offset().top) {
+		                // If current item is has lower y-offset
+		                // than previous item, switch them:
+		                var temp   = current;
+		                marks[j]   = prev;
+		                marks[j-1] = temp;
+		                j--;
+		            } else {
+		                break;
+		            }
+		        }
+		    }
+		    
+		    // Use recursion here?
+		    var $prev = $(marks[0]);
+		    var new_y = $prev.offset().top;
+		    var $mark;
+		    var def = null;
+		    
+		    for (var i = 1; i < marks.length; i++) {
+		        
+		        // Add previous object y-value, previous object height,
+		        // and spacing to get next object y-value.
+		        new_y += $prev.outerHeight() + SPACING * app.factor;
+                $mark = $(marks[i]);
+                
+                var update = (function(i) {
+		            
+		            return function() {
+		                
+		                if ((i + 1) === marks.length) {
+		                    def = $.Deferred();
+		                    def.done(function() {
+		                        app.dispatcher.trigger('undoMarker', 'group_start');
+		                    });
+		                }
+		                
+		                $(this).data('view').updateLocation(def);
+		            };
+		            
+		        })(i);
+		        
+		        $mark.animate({ top: new_y },
+		                      { duration: LIST_ANIMATE,
+		                           queue: false,
+		                        complete: update });
+		        $prev = $mark;
+		    }
+		    
+		},
+		
+		resetDragging: function() {
+		    app.dragging = false;
+		    
+		    app.mousedown = false;
+		    this.$('#wall').selectable('enable');
+		},
+		
+		clearRedos: function() {
+		    
+		    var coll  = app.Redos;
+		    var model = coll.pop();
+		    
+            while (model) {
+                model.destroy();
+                model = coll.pop();
+            }
+		},
+		
+		undoKeys: function() {
+		    var view = this;
+		    $(document).keydown(function(e) {
+		        if(e.which === Z_KEY && e.metaKey && e.shiftKey)
+			        view.undo(true);
+		        else if(e.which === Z_KEY && e.metaKey)
+			        view.undo(false);
+	        });
+		},
+		
+		undo: function(isRedo) {
+		    
+		    var thisStack, thatStack;
+		    
+		    if(isRedo) {
+		        thisStack = app.Redos;
+		        thatStack = app.Undos;
+		    } else {
+		        thisStack = app.Undos;
+		        thatStack = app.Redos;
+		    }
+		    
+		    var prev = thisStack.pop();
+		    
+		    if(prev) {
+		        console.log(prev.get('type'));
+		        if(prev.get('type') === 'group_start') {
+		            
+		            // 'group_end' created first because undos are accessed LIFO:
+		            thatStack.create({ wall: WALL_URL, type: 'group_end' });
+		            this.performUndo(thisStack.pop(), thisStack, thatStack, true);
+		            
+		        } else {
+		            this.performUndo(prev, thisStack, thatStack, false);
+		        }
+		        
+		        // Send redo-stack status signal (for fading / unfading redo button):
+		        if (isRedo && !thisStack.length) app.dispatcher.trigger('redosEmpty');
+		        if (!isRedo) app.dispatcher.trigger('redosExist');
+		    
+		    } else {
+		        // This usually gets called after performing undo,
+		        // but should be called even if there's no undo to perform.
+                app.dispatcher.trigger('undoComplete');
+            }
+		    
+		},
+		
+		performUndo: function(prev, thisStack, thatStack, group) {
+		        
+		        var coll;
+		        if      (prev.get('type') === 'mark')     coll = app.Marks;
+		        else if (prev.get('type') === 'waypoint') coll = app.Waypoints;
+		        
+		        var obj = coll.get( prev.get('obj_pk') );
+		        
+		        var view = this;
+		        console.log('pre-recurse');
+		        
+		        // Saving current object state make an undo/redo out of:
+		        var current_state = {
+		            wall: WALL_URL,
+                    type: obj.type,
+			      obj_pk: obj.get('id'),
+			        text: obj.get('text'),
+			           x: obj.get('x'),
+			           y: obj.get('y')
+			    };
+		        
+		        // Save former state to update object with:
+		        var former_state = {
+		            text: prev.get('text'),
+		               x: prev.get('x'),
+		               y: prev.get('y')
+		        };
+		        
+		          // Destroy undo/redo used to update object.
+		        thatStack.create(current_state, { success: function() {
+			        obj.save(former_state, { success: function() {
+		                prev.destroy({ success: function() {
+		                        app.dispatcher.trigger('undoComplete');
+		                        if (group) view.recurseUndo(thisStack, thatStack);
+		                }});
+		            }});
+			    }});
+		},
+		
+		recurseUndo: function(thisStack, thatStack) {
+		    var previous = thisStack.pop();
+            if (previous.get('type') === 'group_end') {
+                console.log('group end');
+		        thatStack.create({ wall: WALL_URL, type: 'group_start' });
+		    } else {
+		        console.log('recurse');
+                this.performUndo(previous, thisStack, thatStack, true);
+            }
+		},
+		
+		checkForZoom: function(e) {
+		    
+		    // Let user move up and down rows in inputs normally:
+		    if (this.$('.input:visible').length) return;
+		    
+		    if (!this.keyDown) {  // Prevent multiple zooms from holding down arrow keys.
+		        
+		        this.keyDown = true;
+		        
+		        var view = this;
+		        $(window).keyup(function() {
+		            view.keyDown = false;
+		            $(window).unbind('keyup');
+		        });
+		        
+		        // Determine relative zoom factor:
+		        var rel_factor;
+		        if (e.which === UP_KEY) {
+		            e.preventDefault();
+		            rel_factor = ZOOM_IN_FACTOR;
+		            this.zoom(rel_factor);
+		        } else if (e.which === DOWN_KEY) {
+		            e.preventDefault();
+		            rel_factor = ZOOM_OUT_FACTOR;
+		            this.zoom(rel_factor);
+		        }
+		        
+		    } else if (e.which === UP_KEY || e.which === DOWN_KEY) {
+		        e.preventDefault();  // Prevent arrow keys from panning the window up and down.
+		    }
+		},
+		
+		zoom: function(rel_factor) {
+		    
+		    // Calculate new page size:
+		    var new_width  = $('#wall').width()  * rel_factor;
+            var new_height = $('#wall').height() * rel_factor;
+            var new_factor = app.factor * rel_factor;
+            
+            // Don't shrink page below window size:
+            if( new_width  > $(window).width()  &&
+                new_height > $(window).height() &&
+                new_factor < MAX_FACTOR ) {
+                
+                // Update absolute zoom factor:
+                app.factor = new_factor;
+                
+                // Zoom marks and zoom page.
+                app.dispatcher.trigger('zoomObjects', new_width, new_height);
+                this.resizePage(new_width, new_height);
+		        this.recenterWindow(rel_factor);
+		    }
+		},
+		
+		resizePage: function(new_width, new_height) {
+		    $('#wall').animate({ width:  new_width  }, ANIM_OPTS);
+            $('#wall').animate({ height: new_height }, ANIM_OPTS);
+		},
+        
+        recenterWindow: function(rel_factor) {
+            // Page grows/shrinks from right and bottom, so page needs to be recentered.
+            
+            var $w = $(window);
+            
+            // Page movement needs to be calibrated from page center,
+            // rather than top-left:
+            var current_x_center = $w.scrollLeft() + $w.width()/2;
+            var new_x_center = rel_factor * current_x_center;
+            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 }, ANIM_OPTS);
+            
+            var current_y_center = $w.scrollTop() + $w.height()/2;
+            var new_y_center = rel_factor * current_y_center;
+            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 }, ANIM_OPTS);
+        },
 		
 		doNothing: function(e) { e.stopPropagation(); }
         

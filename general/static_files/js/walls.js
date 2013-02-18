@@ -1,14 +1,14 @@
 var app = app || {};
 
-// Document Ready
-// --------------
-
 function afterDrop($obj) {
     // Specify so view doesn't update its location after dragging:
     $obj.addClass('dropped');
     
     $obj.data('view').clear();
 }
+
+// Document Ready
+// --------------
 
 $(function() {
     

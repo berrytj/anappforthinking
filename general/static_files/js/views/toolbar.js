@@ -28,6 +28,14 @@ var app = app || {};
 		    app.dispatcher.on('enableList', this.enableList, this);
 		    app.dispatcher.on('clearSelected', this.disableList, this);
 		    app.dispatcher.on('clearRedos', this.fadeRedoButton, this);
+		    app.dispatcher.on('redosEmpty', this.fadeRedoButton, this);
+		    app.dispatcher.on('redosExist', this.unfadeRedoButton, this);
+		},
+		
+		unfadeRedoButton: function() {
+		    
+		    this.$('#redo-button').removeClass('button-disabled');
+		    
 		},
 		
 		fadeRedoButton: function() {

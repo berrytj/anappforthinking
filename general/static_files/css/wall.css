@@ -15,14 +15,14 @@ body {
     position:absolute;
     display:none;
     
-    padding:1px 0px 5px 5px;
+    padding:1px 5px 5px 5px;
     margin:-2px 0px 0px -6px;
 	
 	height:auto;
 	overflow:hidden;
 	resize:none;
 	
-	font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+	font:14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
     line-height:140%;
 	
 	z-index:10000;
@@ -81,7 +81,7 @@ button {
     bottom:0;
     background-image:url('../images/trash.png');
     background-repeat:no-repeat;
-    z-index:1;
+    z-index:10000;
     opacity:0.6;
 }
 

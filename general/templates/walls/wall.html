@@ -18,12 +18,12 @@
             
             <span id='wall-title'>{{ wall.title }}</span>
             <span id='buttons'>
-              <span class='menu-button bar'>|||</span> <span id='redo-button' class='menu-button'>redo</span>
+              <span class='menu-button bar'>||</span> <span id='redo-button' class='menu-button'>redo</span>
               <span class='menu-button bar'>|</span>   <span id='undo-button' class='menu-button'>undo</span>
-              <span class='menu-button bar'>|||</span> <span id='zoom-out'    class='menu-button'>zoom out</span>
+              <span class='menu-button bar'>||</span> <span id='zoom-out'    class='menu-button'>zoom out</span>
               <span class='menu-button bar'>|</span>   <span id='zoom-in'     class='menu-button'>zoom in</span>
-              <span class='menu-button bar'>|||</span> <span id='list-button' class='menu-button button-disabled'>list</span>
-              <span class='menu-button bar'>|||</span>
+              <span class='menu-button bar'>||</span> <span id='list-button' class='menu-button button-disabled'>list</span>
+              <span class='menu-button bar'>||</span>
             </span>
             
         </div>
@@ -31,7 +31,6 @@
 	
 	
 	<div id='wall'>
-	    <div id='drag-container'></div>
 	    <textarea id='input' class='input' spellcheck='false'></textarea>
 	    <textarea id='waypoint-input' maxlength='22'     name='waypoint'
 	              class='waypoint'    spellcheck='false' style='display:none;'></textarea>
@@ -60,16 +59,6 @@
 		<div><%- text %></div>
 	</script>
 	
-	
-<!-- Still do this instead of fetching for quicker loading?
-	{% for wp in wall.waypoint_set.all %}
-		{% if wp.text|length %}
-			<div id="waypoint{{ wp.pk }}" class="waypoint" style="left:{{ wp.x }}px; top:{{ wp.y }}px;">
-				{{ wp.text }}
-			</div>
-		{% endif %}
-	{% endfor %}
--->
 
 <script>
 var username = '{{ username }}';
