@@ -95,7 +95,7 @@ var app = app || {};
 		    var view = this;
 		    
 		    local_def.done(function() {
-		        
+		        console.log('updating location should come after creating undo');
 		        var loc = view.$el.offset();
 		        
 		        view.model.save({
@@ -191,8 +191,11 @@ var app = app || {};
                             
                             if ($(this).hasClass('ui-selected')) {
                                 
+                                
+                                var def = $.Deferred();
                                 // 'group_end' comes first because undos are accessed LIFO:
-                                app.dispatcher.trigger('undoMarker', 'group_end');
+//                                console.log('active requests: ' + $.ajax.active);
+                                app.dispatcher.trigger('undoMarker', 'group_end', def);
                                 
 		                        $(document).ajaxStop(function() {
 		                            console.log('draggable stop');
@@ -200,8 +203,10 @@ var app = app || {};
                                     app.dispatcher.trigger('undoMarker', 'group_start');
                                 });
                                 
-                                $('.ui-selected').each(function() {
-                                    view.afterDragging( $(this) );
+                                def.done(function() {
+                                    $('.ui-selected').each(function() {
+                                        view.afterDragging( $(this) );
+                                    });
                                 });
                                 
                             } else {

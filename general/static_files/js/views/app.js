@@ -50,6 +50,9 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		initialize: function() {
 			
+			app.queue = $.Deferred();
+			app.queue.resolve();
+			
 			this.input = this.$('#input');  // Cache input field (accessed frequently).
 			this.input.autosize();
 			this.keyDown = false;  // Used to prevent multiple zooms from holding down arrow keys.
@@ -243,16 +246,18 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			app.dispatcher.trigger('clearRedos');
 		},
 		
-		undoMarker: function(type) {
-            app.Undos.create({ wall: WALL_URL, type: type });
+		undoMarker: function(type, def) {
+            app.Undos.create({ wall: WALL_URL, type: type }, { success: function() {
+                if (def) def.resolve();
+            }});
         },
 		
 		list: function() {
 		    var $marks = this.lineUp();
 		    if ($marks.length) {
-		        app.dispatcher.trigger('undoMarker', 'group_end');
-		        // Could this be called before undoMarker is finished saving?
-		        this.evenlySpace($marks);
+		        var def = $.Deferred();
+		        app.dispatcher.trigger('undoMarker', 'group_end', def);
+		        def.done(function() { this.evenlySpace($marks); });
 		    }
 		},
 		
@@ -362,28 +367,41 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		undo: function(isRedo) {
 		    
-		    var thisStack, thatStack;
+		    // NOTE: Terminology here assumes an undo is being performed. If a redo
+		    // is being performed, undo means redo and redo means undo.  I decided to
+		    // leave it undo-specific because using ambiguous names made the functions
+		    // much less clear/readable.
+		    
+		    var Undos, Redo, Redos;
 		    
 		    if(isRedo) {
-		        thisStack = app.Redos;
-		        thatStack = app.Undos;
+		        Undos = app.Redos;  // Global redo collection
+		        Redo = app.Undo;    // Undo model constructor
+		        Redos = app.Undos;  // Global undo collection
 		    } else {
-		        thisStack = app.Undos;
-		        thatStack = app.Redos;
+		        Undos = app.Undos;  // Global undo collection
+		        Redo = app.Redo;    // Redo model constructor
+		        Redos = app.Redos;  // Global redo collection
 		    }
 		    
-		    var prev = thisStack.pop();
+		    var undo = Undos.pop();
 		    
-		    if(prev) {
-		        console.log(prev.get('type'));
-		        if(prev.get('type') === 'group_start') {
+		    if(undo) {
+		        
+		        if(undo.get('type') === 'group_start') {
+		            
+		            var view = this;
 		            
 		            // 'group_end' created first because undos are accessed LIFO:
-		            thatStack.create({ wall: WALL_URL, type: 'group_end' });
-		            this.performUndo(thisStack.pop(), thisStack, thatStack, true);
+		            var marker = new Redo({ wall: WALL_URL, type: 'group_end' });
+		            
+		            $.when(undo.destroy(), marker.save()).then(function() {
+		                Redos.add(marker);
+		                view.performUndo(Undos.pop(), Undos, Redo, Redos, true);
+		            });
 		            
 		        } else {
-		            this.performUndo(prev, thisStack, thatStack, false);
+		            this.performUndo(undo, Undos, Redo, Redos, false);
 		        }
 		        
 		        // Send redo-stack status signal (for fading / unfading redo button):
@@ -398,18 +416,17 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    
 		},
 		
-		performUndo: function(prev, thisStack, thatStack, group) {
+		performUndo: function(undo, Undos, Redo, Redos, group) {
 		        
 		        var coll;
-		        if      (prev.get('type') === 'mark')     coll = app.Marks;
-		        else if (prev.get('type') === 'waypoint') coll = app.Waypoints;
+		        if      (undo.get('type') === 'mark')     coll = app.Marks;
+		        else if (undo.get('type') === 'waypoint') coll = app.Waypoints;
 		        
-		        var obj = coll.get( prev.get('obj_pk') );
+		        // Find the object that the undo refers to:
+		        var pk  = undo.get('obj_pk');
+		        var obj = coll.get(pk);
 		        
-		        var view = this;
-		        console.log('pre-recurse');
-		        
-		        // Saving current object state make an undo/redo out of:
+		        // Save current object state and build a `redo` with it:
 		        var current_state = {
 		            wall: WALL_URL,
                     type: obj.type,
@@ -418,33 +435,47 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			           x: obj.get('x'),
 			           y: obj.get('y')
 			    };
+			    
+			    var redo = new Redo(current_state);
 		        
 		        // Save former state to update object with:
 		        var former_state = {
-		            text: prev.get('text'),
-		               x: prev.get('x'),
-		               y: prev.get('y')
+		            text: undo.get('text'),
+		               x: undo.get('x'),
+		               y: undo.get('y')
 		        };
 		        
-		          // Destroy undo/redo used to update object.
-		        thatStack.create(current_state, { success: function() {
-			        obj.save(former_state, { success: function() {
-		                prev.destroy({ success: function() {
-		                        app.dispatcher.trigger('undoComplete');
-		                        if (group) view.recurseUndo(thisStack, thatStack);
-		                }});
-		            }});
-			    }});
+		        var view = this;
+		        
+		        // Perform async requests concurrently, but
+		        // wait for all to finish before recursing:
+		        $.when(redo.save(), obj.save(former_state), undo.destroy()).then(function() {
+		            
+		            Redos.add(redo);
+		            
+		            if (group) view.recurseUndo(Undos, Redo, Redos);
+		            else       app.dispatcher.trigger('undoComplete');
+		            
+		        });
 		},
 		
-		recurseUndo: function(thisStack, thatStack) {
-		    var previous = thisStack.pop();
-            if (previous.get('type') === 'group_end') {
-                console.log('group end');
-		        thatStack.create({ wall: WALL_URL, type: 'group_start' });
+		recurseUndo: function(Undos, Redo, Redos) {
+		    
+		    var undo = Undos.pop();
+		    
+            if (undo.get('type') === 'group_end') {
+		        
+		        var marker = new Redo({ wall: WALL_URL, type: 'group_start' });
+		        
+		        $.when(undo.destroy(), marker.save()).then(function() {
+		            
+		            Redos.add(marker);
+		            app.dispatcher.trigger('undoComplete');
+		            
+		        });
+		        
 		    } else {
-		        console.log('recurse');
-                this.performUndo(previous, thisStack, thatStack, true);
+                this.performUndo(undo, Undos, Redo, Redos, true);
             }
 		},
 		
