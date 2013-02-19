@@ -1,12 +1,5 @@
 var app = app || {};
 
-function afterDrop($obj) {
-    // Specify so view doesn't update its location after dragging:
-    $obj.addClass('dropped');
-    
-    $obj.data('view').clear();
-}
-
 // Document Ready
 // --------------
 
@@ -15,26 +8,15 @@ $(function() {
     // Kick things off by creating the **App**.
 	new app.AppView();
     
-    // Move these into app.js?
+    // Move these into app.js or subviews?
     
     $('#trash-can').droppable({
         accept: '.ui-draggable',
         hoverClass: 'active-trash-can',
         tolerance: 'pointer',
         drop: function(e, ui) {
-            if (ui.draggable.hasClass('ui-selected')) {
-                
-                app.dispatcher.trigger('undoMarker', 'group_end');
-                
-                $('.ui-selected').each(function() {
-                    afterDrop($(this));
-                });
-                
-                app.dispatcher.trigger('undoMarker', 'group_start');
-                
-            } else {
-                afterDrop(ui.draggable);
-            }
+            app.cancelDrag = true;
+            updateModels(ui.draggable, ui.draggable.data('view').clear);
         }
     });
     

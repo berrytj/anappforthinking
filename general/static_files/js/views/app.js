@@ -50,9 +50,6 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		initialize: function() {
 			
-			app.groupSealed = $.Deferred();
-			app.groupSealed.resolve();
-			
 			this.input = this.$('#input');  // Cache input field (accessed frequently).
 			this.input.autosize();
 			this.keyDown = false;  // Used to prevent multiple zooms from holding down arrow keys.
@@ -253,34 +250,45 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
         },
 		
 		list: function() {
-		    var $marks = this.lineUp();
-		    if ($marks.length) {
-		        var def = $.Deferred();
-		        app.dispatcher.trigger('undoMarker', 'group_end', def);
-		        def.done(function() { this.evenlySpace($marks); });
-		    }
-		},
-		
-		lineUp: function() {
-		    var $selectedMarks = this.$('.ui-selected').not('.waypoint');
-		    if($selectedMarks.length) {
-		        // use top one instead of first id?
-		        var x = $selectedMarks.first().offset().left;
-		        $selectedMarks.each(function() {
-		            $(this).animate({ left: x }, { duration: LIST_ANIMATE, queue: false });
+		    
+		    var $marks = this.$('.ui-selected').not('.waypoint');
+		    
+		    if($marks.length) {
+		        
+		        var x = $marks.first().offset().left;  // Use top mark instead of first id?
+		        
+		        // Align marks on the left side:
+		        $marks.each(function() {
+		            
+		            $(this).animate({
+		                left: x
+		            }, {
+		                duration: LIST_ANIMATE,
+		                queue:    false
+		            });
+		            
 		        });
+		        
+		        this.evenlySpace($marks);
+		        
+		        var $sample_item = $marks.first();
+		        
+		        $marks.promise().done(function() {
+		            updateModels($sample_item, $sample_item.data('view').updateLocation, '.waypoint');
+		        });
+		        
 		    }
-		    return $selectedMarks;
 		},
 		
+		// Decompose this function.
 		evenlySpace: function($marks) {
 		    
 		    // .get() returns array from jQuery object:
 		    var marks = $marks.get();
 		    
 		    // Using insertion sort because array should be mostly sorted:
-		    // marks higher on the screen are likely to have been created first.
-		    for(var i = 1; i < marks.length; i++) {
+		    // marks higher on the screen are likely to have been created earlier.
+		    for (var i = 1; i < marks.length; i++) {
 		        var j = i;
 		        while(j > 0) {  // Loop through all previous items in the array:
 		            var current = marks[j];
@@ -303,41 +311,27 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    var $prev = $(marks[0]);
 		    var new_y = $prev.offset().top;
 		    var $mark;
-		    var def = null;
 		    
 		    for (var i = 1; i < marks.length; i++) {
-		        
 		        // Add previous object y-value, previous object height,
 		        // and spacing to get next object y-value.
 		        new_y += $prev.outerHeight() + SPACING * app.factor;
                 $mark = $(marks[i]);
-                
-                var update = (function(i) {
-		            
-		            return function() {
-		                
-		                if ((i + 1) === marks.length) {
-		                    def = $.Deferred();
-		                    def.done(function() {
-		                        app.dispatcher.trigger('undoMarker', 'group_start');
-		                    });
-		                }
-		                
-		                $(this).data('view').updateLocation(def);
-		            };
-		            
-		        })(i);
 		        
-		        $mark.animate({ top: new_y },
-		                      { duration: LIST_ANIMATE,
-		                           queue: false,
-		                        complete: update });
+		        $mark.animate({
+		            top: new_y
+		        }, {
+		            duration: LIST_ANIMATE,
+		            queue:    false
+		        });
+		        
 		        $prev = $mark;
 		    }
 		    
 		},
 		
 		resetDragging: function() {
+		    
 		    app.dragging = false;
 		    
 		    app.mousedown = false;

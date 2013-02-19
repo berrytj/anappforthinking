@@ -72,14 +72,6 @@ var app = app || {};
 			return this;
 		},
 		
-		afterDragging: function($obj) {
-		    // Don't update location if object was dropped in
-		    // the trash (and removed from the wall). If undone,
-		    // object will show in its pre-trashed location.
-		    if ($obj.hasClass('dropped')) return $obj.removeClass('dropped');
-		    else                          return $obj.data('view').updateLocation();
-		},
-		
 		zoom: function(new_width, new_height) {
             
             this.zoomSize();
@@ -142,10 +134,11 @@ var app = app || {};
 		},
 		
 		clear: function() {
-		    this.createUndo(this.model.get('text'));
+		    var text = this.model.get('text');
 		    this.model.save({ text: '' });
-		    // Note: we don't have to worry about `save` finishing before
-		    // `undo`, because we've already passed `undo` the affected value.
+		    return this.createUndo(text);
+		    // Assuming we don't have to worry about `save` finishing before
+		    // `undo` because we've already save the affected value into a variable.
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },
@@ -192,42 +185,9 @@ var app = app || {};
                             }
                         },
                         stop: function() {
-                            // generalize into function you can use here and after trash dropping...
-                            
-  //                          updateModels($(this), view.afterDragging);
-//                        var updateModels = function (obj, func) {
-                            if ( $(this).hasClass('ui-selected') ) {  // If a group was being dragged:
-                                
-                                var addingMarker = $.Deferred();
-                                
-                                // Two drags in quick succession leads to a glitch where 'group_end' is
-                                // added twice without a 'group_start' in between. Disable dragging while
-                                // undo is processing?
-                                console.log('starting group');
-                                app.dispatcher.trigger('undoMarker', 'group_end', addingMarker);  // 'group_end' comes before 'group_start'
-                                                                                                  // because undos will be accessed LIFO.
-                                var addingUndos = [];
-                                
-                                // Undos must wait until the 'group_end' marker has been placed;
-                                // hence they wait for resolution of the `addingMarker` deferred object:
-                                addingMarker.done(function() {
-                                    
-                                    // Undos are added asynchronously to save time...
-                                    $('.ui-selected').each(function() {
-                                        addingUndos.push( view.afterDragging( $(this) ) );
-                                    });
-                                    
-                                    // ...but all must be added before placing the 'group_start' marker:
-                                    $.when.apply(null, addingUndos).done(function() {
-                                        console.log('ending group');
-                                        app.dispatcher.trigger('undoMarker', 'group_start');
-                                    });
-                                    
-                                });
-                                
-                            } else {  // If just one object was being dragged:
-                                view.afterDragging( $(this) );
-                            }
+                            // Assuming here that `drop` event always hits before `drag: stop`.
+                            if(app.cancelDrag === true) app.cancelDrag === false;
+                            else                        updateModels($(this), view.updateLocation);
                         }
 			});
 		},
