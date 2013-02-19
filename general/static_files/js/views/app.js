@@ -50,8 +50,8 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		initialize: function() {
 			
-			app.queue = $.Deferred();
-			app.queue.resolve();
+			app.groupSealed = $.Deferred();
+			app.groupSealed.resolve();
 			
 			this.input = this.$('#input');  // Cache input field (accessed frequently).
 			this.input.autosize();
@@ -367,12 +367,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		undo: function(isRedo) {
 		    
-		    // NOTE: Terminology here assumes an undo is being performed. If a redo
-		    // is being performed, undo means redo and redo means undo.  I decided to
-		    // leave it undo-specific because using ambiguous names made the functions
-		    // much less clear/readable.
-		    
 		    var Undos, Redo, Redos;
+		    
+		    // NOTE: Terminology here assumes an undo is being performed. If a redo
+		    // is being performed, undo means redo and redo means undo (as you can
+		    // see from the assignments below).  I decided to leave it undo-specific
+		    // because using ambiguous names made the functions much less clear/readable.
 		    
 		    if(isRedo) {
 		        Undos = app.Redos;  // Global redo collection
@@ -405,7 +405,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		        }
 		        
 		        // Send redo-stack status signal (for fading / unfading redo button):
-		        if (isRedo && !thisStack.length) app.dispatcher.trigger('redosEmpty');
+		        if (isRedo && !Undos.length) app.dispatcher.trigger('redosEmpty');
 		        if (!isRedo) app.dispatcher.trigger('redosExist');
 		    
 		    } else {

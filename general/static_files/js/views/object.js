@@ -43,7 +43,9 @@ var app = app || {};
 		            this.$el.appendTo('#wall')
 		                    .removeClass('ui-draggable-dragging dragged dropped');
 		            
-		            if (this.$el.hasClass('ui-draggable')) this.$el.draggable('destroy');  // Need to renew draggable after re-appending.
+		            // Destroy draggable after re-appending or dragging won't
+		            // work (object gets made draggable again below):
+		            if (this.$el.hasClass('ui-draggable')) this.$el.draggable('destroy');
 		        }
 		        
                 this.$el.html(this.template(this.model.toJSON()))
@@ -66,7 +68,7 @@ var app = app || {};
 			}
             
             // Return view so you can chain this function,
-            // e.g. 'append(view.render().el)'.
+            // e.g. `append(view.render().el)`.
 			return this;
 		},
 		
@@ -74,8 +76,8 @@ var app = app || {};
 		    // Don't update location if object was dropped in
 		    // the trash (and removed from the wall). If undone,
 		    // object will show in its pre-trashed location.
-		    if ($obj.hasClass('dropped')) $obj.removeClass('dropped');
-            else                          $obj.data('view').updateLocation();
+		    if ($obj.hasClass('dropped')) return $obj.removeClass('dropped');
+		    else                          return $obj.data('view').updateLocation();
 		},
 		
 		zoom: function(new_width, new_height) {
@@ -88,29 +90,23 @@ var app = app || {};
             this.$el.animate({ left: new_x, top: new_y }, ANIM_OPTS);
 		},
 		
-		updateLocation: function(def) {
+		updateLocation: function() {
 		    
-		    var local_def = $.Deferred();
+		    var x = this.model.get('x');
+		    var y = this.model.get('y');
 		    
-		    var view = this;
+		    var loc = this.$el.offset();
 		    
-		    local_def.done(function() {
-		        console.log('updating location should come after creating undo');
-		        var loc = view.$el.offset();
-		        
-		        view.model.save({
-		            x: loc.left / app.factor,
-		            y: loc.top  / app.factor
-		        }, {
-		            silent: true,  // Element has already moved; pass silent to avoid micro-movements.
-		            success: function() {
-		                if (def) def.resolve();  // Initiate callback in function that called updateLocation.
-		            }
-		        });
-		        
+		    this.model.save({
+		        x: loc.left / app.factor,
+		        y: loc.top  / app.factor
+		    }, {
+		        // Element has already moved; pass silent to
+		        // avoid micro-movements due to re-rendering:
+		        silent: true
 		    });
 		    
-		    this.createUndo(local_def);
+		    return this.createUndo(null, x, y);
 		},
 		
 		cleanup: function(e) {
@@ -120,28 +116,36 @@ var app = app || {};
 		    this.$el.removeClass('dragged');
 		},
 		
-		createUndo: function(def) {
-		    console.log('creating undo');
+		createUndo: function(text, x, y) {
+		    
+		    app.dispatcher.trigger('clearRedos');
+		    
 		    // Quicker way to transfer multiple attributes?
-            app.Undos.create({ wall: WALL_URL,
-                               type: this.model.type,
-			                 obj_pk: this.model.get('id'),
-			                   text: this.model.get('text'),
-			                      x: this.model.get('x'),
-			                      y: this.model.get('y') },
-			                 { success: function() {
-			                    if (def) def.resolve();
-			                 }});
+		    // Have undo and mark both extend object model?
+		    var current_state = {
+                wall: WALL_URL,
+                type: this.model.type,
+			  obj_pk: this.model.get('id'),
+			    text: text || this.model.get('text'),
+			       x: x    || this.model.get('x'),
+			       y: y    || this.model.get('y')
+			};
 			
-			app.dispatcher.trigger('clearRedos');
+			var undo = new app.Undo(current_state);
+			
+			var saved = undo.save();
+			
+			$.when(saved).then(function() {
+			    app.Undos.add(undo);
+			    return saved;
+			});
 		},
 		
 		clear: function() {
-		    var def = $.Deferred();
-		    def.done(function() {
-		        this.model.save({ text: '' });
-		    });
-		    this.createUndo(def);
+		    this.createUndo(this.model.get('text'));
+		    this.model.save({ text: '' });
+		    // Note: we don't have to worry about `save` finishing before
+		    // `undo`, because we've already passed `undo` the affected value.
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },
@@ -188,28 +192,40 @@ var app = app || {};
                             }
                         },
                         stop: function() {
+                            // generalize into function you can use here and after trash dropping...
                             
-                            if ($(this).hasClass('ui-selected')) {
+  //                          updateModels($(this), view.afterDragging);
+//                        var updateModels = function (obj, func) {
+                            if ( $(this).hasClass('ui-selected') ) {  // If a group was being dragged:
                                 
+                                var addingMarker = $.Deferred();
                                 
-                                var def = $.Deferred();
-                                // 'group_end' comes first because undos are accessed LIFO:
-//                                console.log('active requests: ' + $.ajax.active);
-                                app.dispatcher.trigger('undoMarker', 'group_end', def);
+                                // Two drags in quick succession leads to a glitch where 'group_end' is
+                                // added twice without a 'group_start' in between. Disable dragging while
+                                // undo is processing?
+                                console.log('starting group');
+                                app.dispatcher.trigger('undoMarker', 'group_end', addingMarker);  // 'group_end' comes before 'group_start'
+                                                                                                  // because undos will be accessed LIFO.
+                                var addingUndos = [];
                                 
-		                        $(document).ajaxStop(function() {
-		                            console.log('draggable stop');
-                                    $(this).unbind('ajaxStop');
-                                    app.dispatcher.trigger('undoMarker', 'group_start');
-                                });
-                                
-                                def.done(function() {
+                                // Undos must wait until the 'group_end' marker has been placed;
+                                // hence they wait for resolution of the `addingMarker` deferred object:
+                                addingMarker.done(function() {
+                                    
+                                    // Undos are added asynchronously to save time...
                                     $('.ui-selected').each(function() {
-                                        view.afterDragging( $(this) );
+                                        addingUndos.push( view.afterDragging( $(this) ) );
                                     });
+                                    
+                                    // ...but all must be added before placing the 'group_start' marker:
+                                    $.when.apply(null, addingUndos).done(function() {
+                                        console.log('ending group');
+                                        app.dispatcher.trigger('undoMarker', 'group_start');
+                                    });
+                                    
                                 });
                                 
-                            } else {
+                            } else {  // If just one object was being dragged:
                                 view.afterDragging( $(this) );
                             }
                         }

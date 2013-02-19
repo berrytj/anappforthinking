@@ -128,11 +128,8 @@ var BOTTOM_INDEX = 10;
 			            if(text) {
 			                
 			                if (this.model.get('text') !== text) {  // If text actually changed:
-			                    this.createUndo();
-			                    // Change model silently and just update
-			                    // label text rather than re-rendering mark:
-			                    this.model.save({ text: text }, { silent: true });
-			                    this.$('label').text(text);
+			                    this.createUndo(this.model.get('text'));
+			                    this.model.save({ text: text });
 			                }
 			                $input.hide();
 			                
