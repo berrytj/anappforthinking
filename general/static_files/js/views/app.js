@@ -28,6 +28,8 @@ var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 // Get items for this wall only.  Don't limit quantity returned (default is 20).
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 
+var ADD_TO_COLL = { success: addToColl };
+
 
 (function() {
     
@@ -50,14 +52,18 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		
 		initialize: function() {
 			
-			this.input = this.$('#input');  // Cache input field (accessed frequently).
-			this.input.autosize();
-			this.keyDown = false;  // Used to prevent multiple zooms from holding down arrow keys.
+			this.timeAjax();
 			
-			app.dispatcher = _.extend({}, Backbone.Events);  // _.extend adds the latter arg to the former.
-			app.factor = 1;  // Keep track of zoom factor.
-			app.dragging = false;  // Used to distinguish between click and drags.
-			app.mousedown = false;  // So you can disable selector if input appears while mouse is still down.
+			this.input = this.$('#input');  // Cache input field (accessed frequently).
+			this.input.autosize();          // Input box will grow / shrink automatically.
+			this.keyDown = false;           // Used to prevent multiple zooms when holding down an arrow key.
+			
+			app.savingGroup = $.Deferred();  // Indicates whether an undo group is still being processed.
+			app.savingGroup.resolve();       // No group is being processed on startup.
+			app.dispatcher = _.extend({}, Backbone.Events);  // Different views can trigger and respond to events through the dispatcher.
+			app.factor = 1;         // Keep track of zoom factor.
+			app.dragging = false;   // Used to distinguish between click and drags.
+			app.mousedown = false;  // To disable selecting if input appears while mouse is still down.
 			
 			app.dispatcher.on('zoom', this.zoom, this);
 			app.dispatcher.on('undo', this.undo, this);
@@ -87,10 +93,66 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 			    }
 			});
 			
+			// do cleanup, in case connection was lost during saving:
+			// add an empty undo for any object that doesn't have one
+			// maybe add a group_start at the beginning if a group_end
+			// is found before a group start is found in the list?
+			// anything else?
+			
 			var toolbar = new app.ToolbarView();
 			var waypoint_tags = new app.WaypointTagsView();
 			
 			this.undoKeys();
+		},
+		
+		calculateTime: function(start, type) {
+		    
+		    var end = new Date();
+		    var time = end - start;
+		    console.log(type + ': ' + time);
+		    
+		},
+		
+		timeQueued: function(a, b, c, d, e) {
+		    
+		    var view = this;
+		    var start = new Date();
+		    
+		    $.Deferred().resolve()
+		    .then(function() { return a.save(); })
+		    .then(function() { return b.save(); })
+//		    .then(function() { return c.save(); })
+//		    .then(function() { return d.save(); })
+//		    .then(function() { return e.save(); })
+		    .done(function() { view.calculateTime(start, 'queued'); });
+		    
+		},
+		
+		timeGrouped: function(a, b, c, d, e) {
+		    
+		    var view = this;
+		    var start = new Date();
+		    
+		    $.when(a.save()
+		         , b.save()
+//		         , c.save()
+//		         , d.save()
+//		         , e.save()
+		    ).done(function() { view.calculateTime(start, 'grouped'); });
+		    
+		},
+		
+		timeAjax: function() {
+		    
+		    var a = new app.Redo({ wall: WALL_URL, type: 'group_end' });
+		    var b = new app.Redo({ wall: WALL_URL, type: 'group_end' });
+		    var c = new app.Redo({ wall: WALL_URL, type: 'group_end' });
+		    var d = new app.Redo({ wall: WALL_URL, type: 'group_end' });
+		    var e = new app.Redo({ wall: WALL_URL, type: 'group_end' });
+		    
+//		    this.timeQueued(a, b, c, d, e);
+//		    this.timeGrouped(a, b, c, d, e);
+		    
 		},
 		
 		createViewForModel: function(model) {
@@ -220,12 +282,14 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		createModel: function($input, coll, text) {
 		    
 		    var loc = $input.offset();
-			var attributes = { wall: WALL_URL,
-			                   text: text,
-			                   x: loc.left / app.factor,
-			                   y: loc.top  / app.factor };
+			var attributes = {
+			    wall: WALL_URL,
+			    text: text,
+			       x: loc.left / app.factor,
+			       y: loc.top  / app.factor
+			};
 			
-			coll.create(attributes, { wait: true, success: this.createEmptyUndo });
+			coll.create(attributes, { success: this.createEmptyUndo });
 			
 			$input.val('');
 		},
@@ -233,20 +297,31 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		createEmptyUndo: function(model) {
 			
 			// Create a blank undo object so creation can be undone / redone:
-			app.Undos.create({ wall: WALL_URL,
-                               type: model.type,
-			                 obj_pk: model.get('id'),
-			                   text: '',
-			                      x: 0,
-			                      y: 0 });
+			app.Undos.create({
+			    wall: WALL_URL,
+                type: model.type,
+			  obj_pk: model.get('id'),
+			    text: '',
+			       x: 0,
+			       y: 0
+			});
 			
 			app.dispatcher.trigger('clearRedos');
 		},
 		
-		undoMarker: function(type, def) {
-            app.Undos.create({ wall: WALL_URL, type: type }, { success: function() {
-                if (def) def.resolve();
-            }});
+		undoMarker: function(type, deferred) {
+		    
+            app.Undos.create({
+                wall: WALL_URL,
+                type: type  // 'group_end' or 'group_start'
+            }, {
+                success: function() {
+                             if (deferred) {
+                                deferred.resolve();
+                                if (type === 'group_start') app.dispatcher.trigger('doneSaving');
+                             }
+                         }
+            });
         },
 		
 		list: function() {
@@ -273,8 +348,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		        
 		        var $sample_item = $marks.first();
 		        
+		        // `.promise()` waits for all animations to finish:
 		        $marks.promise().done(function() {
-		            updateModels($sample_item, $sample_item.data('view').updateLocation, '.waypoint');
+		            
+		            updateModels( $sample_item,
+		                          $sample_item.data('view').updateLocation,
+		                          $marks );
 		        });
 		        
 		    }
@@ -359,6 +438,10 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 	        });
 		},
 		
+		addRedo: function(redo) {
+		    
+		},
+		
 		undo: function(isRedo) {
 		    
 		    var Undos, Redo, Redos;
@@ -368,7 +451,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    // see from the assignments below).  I decided to leave it undo-specific
 		    // because using ambiguous names made the functions much less clear/readable.
 		    
-		    if(isRedo) {
+		    if (isRedo) {
 		        Undos = app.Redos;  // Global redo collection
 		        Redo = app.Undo;    // Undo model constructor
 		        Redos = app.Undos;  // Global undo collection
@@ -380,33 +463,40 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		    
 		    var undo = Undos.pop();
 		    
-		    if(undo) {
+		    if (undo) {
 		        
-		        if(undo.get('type') === 'group_start') {
+		        app.dispatcher.trigger('saving');
+		        
+		        var type = undo.get('type');
+		        
+		        if (type === 'group_end') {
 		            
-		            var view = this;
+		            // If type is 'group_end', connection was lost during saving;
+		            // just ignore and move to the next undo.
+		            this.undo(isRedo);
+		            
+		        } else if (type === 'group_start') {
 		            
 		            // 'group_end' created first because undos are accessed LIFO:
 		            var marker = new Redo({ wall: WALL_URL, type: 'group_end' });
 		            
-		            $.when(undo.destroy(), marker.save()).then(function() {
-		                Redos.add(marker);
-		                view.performUndo(Undos.pop(), Undos, Redo, Redos, true);
+		            var switchMarkers = function() {
+		                
+		                return $.when( marker.save({}, ADD_TO_COLL),
+		                               undo.destroy() );
+		            };
+		            
+		            var view = this;
+		            switchMarkers().done(function() {
+//		            app.lastGroup = app.lastGroup.then(switchMarkers).then(function() {
+		                view.performUndo(Undos.pop(), Undos, Redo, Redos, []);
 		            });
 		            
 		        } else {
-		            this.performUndo(undo, Undos, Redo, Redos, false);
+		            this.performUndo(undo, Undos, Redo, Redos);
 		        }
 		        
-		        // Send redo-stack status signal (for fading / unfading redo button):
-		        if (isRedo && !Undos.length) app.dispatcher.trigger('redosEmpty');
-		        if (!isRedo) app.dispatcher.trigger('redosExist');
-		    
-		    } else {
-		        // This usually gets called after performing undo,
-		        // but should be called even if there's no undo to perform.
-                app.dispatcher.trigger('undoComplete');
-            }
+		    }
 		    
 		},
 		
@@ -439,37 +529,46 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 		               y: undo.get('y')
 		        };
 		        
-		        var view = this;
-		        
-		        // Perform async requests concurrently, but
-		        // wait for all to finish before recursing:
-		        $.when(redo.save(), obj.save(former_state), undo.destroy()).then(function() {
-		            
-		            Redos.add(redo);
-		            
-		            if (group) view.recurseUndo(Undos, Redo, Redos);
-		            else       app.dispatcher.trigger('undoComplete');
-		            
-		        });
+                var saving;
+//                app.lastGroup = app.lastGroup.then(function() {
+                
+                
+                
+                saving = $.when( obj.save(former_state),
+                                     redo.save({}, ADD_TO_COLL),
+                                     undo.destroy() );
+                if (group) {
+                    group.push(saving);
+                    this.recurseUndo(Undos, Redo, Redos, group);
+		        } else {
+		            saving.done(function() { app.dispatcher.trigger('doneSaving'); });
+		        }
 		},
 		
-		recurseUndo: function(Undos, Redo, Redos) {
+		recurseUndo: function(Undos, Redo, Redos, group) {
 		    
 		    var undo = Undos.pop();
 		    
+		    // ignore certain starts / ends in case connection is lost during processing?
             if (undo.get('type') === 'group_end') {
+		        
+		        undo.destroy();
 		        
 		        var marker = new Redo({ wall: WALL_URL, type: 'group_start' });
 		        
-		        $.when(undo.destroy(), marker.save()).then(function() {
-		            
-		            Redos.add(marker);
-		            app.dispatcher.trigger('undoComplete');
-		            
-		        });
+		        $.when.apply(null, group).done(function() {
+                    
+                    marker.save({}, {
+                        success: function(marker) {
+                                     Redos.add(marker);
+		                             app.dispatcher.trigger('doneSaving');
+                                 }
+                    });
+                    
+                });
 		        
 		    } else {
-                this.performUndo(undo, Undos, Redo, Redos, true);
+                this.performUndo(undo, Undos, Redo, Redos, group);
             }
 		},
 		

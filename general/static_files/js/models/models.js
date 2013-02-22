@@ -8,28 +8,42 @@ var API_NAME = '/api/v1';
     
     'use strict';
     
-	app.Mark = window.TastypieModel.extend({
-		// Default attributes for the todo and ensure that each mark created
-		// has 'text', 'x', and 'y' keys.
+    app.Obj = window.TastypieModel.extend({
+        
 		defaults: {
 			text: '',
 			x: 0,
 			y: 0
 		},
+		
+		initialize: function() {
+            this.queue = $.Deferred();
+            this.queue.resolve();
+        },
+        
+        save: function(attrs, options) {
+            
+            var model = this;
+            this.queue = this.queue.then(function() {
+                return Backbone.Model.prototype.save.call(model, attrs, options);
+            });
+            
+        },
+        
+    });
+    
+    
+	app.Mark = app.Obj.extend({
 		
 		type: 'mark',
-	});
-	
-	
-	app.Waypoint = window.TastypieModel.extend({
-	    
-		defaults: {
-			text: '',
-			x: 0,
-			y: 0
-		},
 		
+	});	
+	
+	
+	app.Waypoint = app.Obj.extend({
+	    
 		type: 'waypoint',
+		
 	});
 	
 	
@@ -44,6 +58,8 @@ var API_NAME = '/api/v1';
 			x: 0,
 			y: 0
 		},
+		
+		coll: 'undo',
 	});
 	
 	
@@ -58,6 +74,8 @@ var API_NAME = '/api/v1';
 			x: 0,
 			y: 0
 		},
+		
+		coll: 'redo',
 	});
 	
 }());

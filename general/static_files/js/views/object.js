@@ -49,10 +49,10 @@ var app = app || {};
 		        }
 		        
                 this.$el.html(this.template(this.model.toJSON()))
-			            .offset({
+			            .animate({
 			                left: this.model.get('x') * app.factor,
 			                top:  this.model.get('y') * app.factor
-			            });
+			             }, ANIM_OPTS);
 			    
 			    this.zoomSize();
 			    
@@ -89,16 +89,21 @@ var app = app || {};
 		    
 		    var loc = this.$el.offset();
 		    
+		    var wait = $.Deferred();
+		    
 		    this.model.save({
 		        x: loc.left / app.factor,
 		        y: loc.top  / app.factor
 		    }, {
 		        // Element has already moved; pass silent to
 		        // avoid micro-movements due to re-rendering:
-		        silent: true
+		        silent: true,
+		        success: function() {
+		                     wait.resolve();
+		                 }
 		    });
 		    
-		    return this.createUndo(null, x, y);
+		    return this.createUndo(null, x, y, wait);
 		},
 		
 		cleanup: function(e) {
@@ -108,7 +113,7 @@ var app = app || {};
 		    this.$el.removeClass('dragged');
 		},
 		
-		createUndo: function(text, x, y) {
+		createUndo: function(text, x, y, wait) {
 		    
 		    app.dispatcher.trigger('clearRedos');
 		    
@@ -125,20 +130,26 @@ var app = app || {};
 			
 			var undo = new app.Undo(current_state);
 			
-			var saved = undo.save();
-			
-			$.when(saved).then(function() {
-			    app.Undos.add(undo);
-			    return saved;
+			var saved = wait.then(function() {
+			    return undo.save({}, {
+			               success: function(model) {
+			                           app.Undos.add(model);
+			                        }
+			           });
 			});
+			
+			// Returning a jqXHR (deferred) object so the updateModels
+			// function will know when undos are finished being added
+			// (and then can go ahead and place 'group_start' marker).
+			return saved;
 		},
 		
+		// Decompose and share function with updateLocation?
 		clear: function() {
 		    var text = this.model.get('text');
-		    this.model.save({ text: '' });
-		    return this.createUndo(text);
-		    // Assuming we don't have to worry about `save` finishing before
-		    // `undo` because we've already save the affected value into a variable.
+		    var wait = $.Deferred;
+		    this.model.save({ text: '' }, { success: function() { wait.resolve(); } });
+		    return this.createUndo(text, null, null, wait);
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },

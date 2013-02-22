@@ -1,39 +1,64 @@
-var updateModels = function($obj, func, excl) {
+var addToColl = function(model) {
+	
+	var collection;
+	
+	switch (model.coll) {
+		case 'undo':
+		    collection = app.Undos;
+		    break;
+		case 'redo':
+		    collection = app.Redos;
+		    break;
+	}
+	
+	collection.add(model);
+	
+};
+
+var updateEach = function(update, $group, savingUndos) {
     
-    if ( $obj.hasClass('ui-selected') ) {  // If a group was being dragged/dropped:
+    $group.each(function() {                    
+        // Invoke the `update` function parameter, binding each object's view in turn as `this`.
+        savingUndos.push( update.apply( $(this).data('view') ) );
+    });
+    
+    return savingUndos;
+};
+
+var groupEnd = function(savingUndos) {
+    
+    $.when.apply(null, savingUndos).done(function() {
+        app.dispatcher.trigger('undoMarker', 'group_start', app.savingGroup);
+    });
+    
+};
+
+var updateModels = function($obj, update, $group) {
+    console.log('updating models');
+    app.dispatcher.trigger('saving');
+    
+    if ( $obj.hasClass('ui-selected') ) {
         
-        // Double check that this always picks '' when excl is undefined,
-        // and that `.not('')` does nothing.
-        var excluded = excl || '';
+        if (!$group) $group = $('.ui-selected');
         
-        var addingMarker = $.Deferred();
-        
-        // Two drags in quick succession leads to a glitch where 'group_end' is
-        // added twice without a 'group_start' in between. Disable dragging while
-        // undo is processing?
-        app.dispatcher.trigger('undoMarker', 'group_end', addingMarker);  // 'group_end' comes before 'group_start'
-                                                                          // because undos will be accessed LIFO.
-        // An array of jqXHR objects, each indicating
-        // when an undo has finished being added:
-        var addingUndos = [];
-        
-        // Undos must wait until the 'group_end' marker has been placed;
-        // hence they wait for resolution of the `addingMarker` deferred object:
-        addingMarker.done(function() {
+        if ( (app.savingGroup.state()) === 'resolved' ) {
             
-            // Undos are added asynchronously to save time...
-            $('.ui-selected').not(excluded).each(function() {
-                addingUndos.push( func.apply( $(this).data('view') ) );
-            });
+            app.savingGroup  = $.Deferred();
+            var savingMarker = $.Deferred();
+            var savingUndos  = [];
             
-            // ...but all must be added before placing the 'group_start' marker:
-            $.when.apply(null, addingUndos).done(function() {
-                app.dispatcher.trigger('undoMarker', 'group_start');
-            });
+            app.dispatcher.trigger('undoMarker', 'group_end', savingMarker);
             
-        });
+//            savingMarker.done(function() {
+                savingUndos = updateEach(update, $group, savingUndos);
+                groupEnd(savingUndos);
+//            });
+            
+        }
         
-    } else {  // If just one object was being dragged/dropped:
-        func.apply( $obj.data('view') );
+    } else {
+        update.apply( $obj.data('view') );
+        app.dispatcher.trigger('doneSaving');
     }
-}
+    console.log('done synchronous updating');
+};

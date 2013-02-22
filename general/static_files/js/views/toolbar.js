@@ -24,12 +24,14 @@ var app = app || {};
 		initialize: function() {
 		    this.undoEnabled = true;
 		    this.listEnabled = false;
-		    app.dispatcher.on('undoComplete', this.enableUndoButtons, this);
-		    app.dispatcher.on('enableList', this.enableList, this);
-		    app.dispatcher.on('clearSelected', this.disableList, this);
-		    app.dispatcher.on('clearRedos', this.fadeRedoButton, this);
-		    app.dispatcher.on('redosEmpty', this.fadeRedoButton, this);
-		    app.dispatcher.on('redosExist', this.unfadeRedoButton, this);
+		    app.dispatcher.on('undoComplete',  this.doneSaving,       this);
+		    app.dispatcher.on('saving',        this.saving,           this);
+		    app.dispatcher.on('doneSaving',    this.doneSaving,       this);
+		    app.dispatcher.on('enableList',    this.enableList,       this);
+		    app.dispatcher.on('clearSelected', this.disableList,      this);
+		    app.dispatcher.on('clearRedos',    this.fadeRedoButton,   this);
+		    app.dispatcher.on('redosEmpty',    this.fadeRedoButton,   this);
+		    app.dispatcher.on('redosExist',    this.unfadeRedoButton, this);
 		},
 		
 		unfadeRedoButton: function() {
@@ -49,26 +51,38 @@ var app = app || {};
 		zoomOut:     function() { app.dispatcher.trigger('zoom', ZOOM_OUT_FACTOR); },
 		
 		list: function() {
-		    if(this.listEnabled) app.dispatcher.trigger('list');
+		    if (this.listEnabled) app.dispatcher.trigger('list');
 		},
 		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {
 		    if(this.undoEnabled) {
-		        this.undoEnabled = false;
+		        this.saving();
 		        app.dispatcher.trigger('undo', false);
 		    }
 		},
 		
 		redo: function() {
 		    if(this.undoEnabled) {
-		        this.undoEnabled = false;
+		        this.saving();
 		        app.dispatcher.trigger('undo', true);
 		    }
 		},
 		
-		enableUndoButtons: function() {
-		    this.undoEnabled = true;
+		saving: function() {
+		    
+//		    this.undoEnabled = false;
+		    this.$('#saving').text('saving...');
+//		    this.$('#undo-button').addClass('button-disabled');
+//		    this.$('#redo-button').addClass('button-disabled');
+		},
+		
+		doneSaving: function() {
+		    
+//		    this.undoEnabled = true;
+		    this.$('#saving').text('saved');
+//		    if (app.Undos.length) this.$('#undo-button').removeClass('button-disabled');
+//		    if (app.Redos.length) this.$('#redo-button').removeClass('button-disabled');
 		},
 		
 		disableList: function() {
