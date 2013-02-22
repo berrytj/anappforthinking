@@ -34,7 +34,7 @@ var groupEnd = function(savingUndos) {
 };
 
 var updateModels = function($obj, update, $group) {
-    console.log('updating models');
+    
     app.dispatcher.trigger('saving');
     
     if ( $obj.hasClass('ui-selected') ) {
@@ -49,10 +49,8 @@ var updateModels = function($obj, update, $group) {
             
             app.dispatcher.trigger('undoMarker', 'group_end', savingMarker);
             
-//            savingMarker.done(function() {
-                savingUndos = updateEach(update, $group, savingUndos);
-                groupEnd(savingUndos);
-//            });
+            savingUndos = updateEach(update, $group, savingUndos);
+            groupEnd(savingUndos);
             
         }
         
@@ -60,5 +58,5 @@ var updateModels = function($obj, update, $group) {
         update.apply( $obj.data('view') );
         app.dispatcher.trigger('doneSaving');
     }
-    console.log('done synchronous updating');
+    
 };
