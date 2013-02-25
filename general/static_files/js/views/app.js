@@ -1,6 +1,7 @@
 // The Application
 // ---------------
-// There may be some lingering code from an example that I was learning from: addyosmani.github.com/todomvc/
+// There may be some lingering code from an example that
+// I was learning from: addyosmani.github.com/todomvc/
 
 var app = app || {};
 
@@ -23,12 +24,10 @@ var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
 var TIME = 100;  // Go slower if you can make font size animation less choppy.
-var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
-
-// Get items for this wall only.  Don't limit quantity returned (default is 20).
-var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
-
-var ADD_TO_COLL = { success: addToColl };
+var ANIM_OPTS = { duration: TIME, queue: true };  // Animation options.
+var EXTRA = 1.2;
+                                                             // Get items for this wall only.  Don't 
+var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity returned (default is 20).
 
 
 (function() {
@@ -50,62 +49,592 @@ var ADD_TO_COLL = { success: addToColl };
 			'mouseup'                 : 'resetDragging',
 		},
 		
+	  //////////////////////////////
+	  // ***** INITIALIZING ***** //
+	  //////////////////////////////
+		
 		initialize: function() {
 			
-			this.timeAjax();
+			this.setViewVariables();
+			this.setAppVariables();
+			this.listen();
+			this.populate();
 			
-			this.input = this.$('#input');  // Cache input field (accessed frequently).
-			this.input.autosize();          // Input box will grow / shrink automatically.
-			this.keyDown = false;           // Used to prevent multiple zooms when holding down an arrow key.
+			new app.ToolbarView();
+			new app.WaypointTagsView();
 			
-			app.savingGroup = $.Deferred();  // Indicates whether an undo group is still being processed.
-			app.savingGroup.resolve();       // No group is being processed on startup.
-			app.dispatcher = _.extend({}, Backbone.Events);  // Different views can trigger and respond to events through the dispatcher.
-			app.factor = 1;         // Keep track of zoom factor.
-			app.dragging = false;   // Used to distinguish between click and drags.
-			app.mousedown = false;  // To disable selecting if input appears while mouse is still down.
-			
-			app.dispatcher.on('zoom', this.zoom, this);
-			app.dispatcher.on('undo', this.undo, this);
-			app.dispatcher.on('list', this.list, this);
-			app.dispatcher.on('clearRedos', this.clearRedos, this);
-			app.dispatcher.on('clearSelected', this.clearSelected, this);
-			app.dispatcher.on('undoMarker', this.undoMarker, this);
-			
-			// Refine this: only check for marks being edited if inputs aren't open.
-			// Don't check inputs again when this is called from within toggleInput.
-			app.dispatcher.on('wallClick', this.hideInputs, this);
-			
-			app.Marks.on('add', this.createViewForModel, this);
-			app.Marks.on('reset', this.addMarks, this);
-			
-			app.Waypoints.on('add', this.createViewForModel, this);
-			app.Waypoints.on('reset', this.addWaypoints, this);
-			
-			// Fetching calls 'reset' on Marks collection.
-			app.Marks.fetch(FETCH_OPTS);
-			app.Waypoints.fetch(FETCH_OPTS);
-			app.Undos.fetch(FETCH_OPTS);
-			app.Redos.fetch({
-			    data: { wall__id: wall_id, limit: 0 },
-			    success: function(coll) {
-			        if (!coll.length) app.dispatcher.trigger('redosEmpty');
-			    }
-			});
-			
-			// do cleanup, in case connection was lost during saving:
-			// add an empty undo for any object that doesn't have one
-			// maybe add a group_start at the beginning if a group_end
-			// is found before a group start is found in the list?
-			// anything else?
-			
-			var toolbar = new app.ToolbarView();
-			var waypoint_tags = new app.WaypointTagsView();
-			
-			this.undoKeys();
 		},
 		
-		calculateTime: function(start, type) {
+		setViewVariables: function() {
+		    
+		    this.input = this.$('#input');  // Cache input field (accessed frequently).
+			this.input.autosize();          // Input box will grow / shrink automatically.
+			this.keyDown = false;           // Used to prevent multiple zooms when holding down an arrow key.
+		    
+		},
+		
+		setAppVariables: function() {
+		    
+			app.factor = 1;          // Keep track of zoom factor.
+			app.dragging  = false;   // To distinguish between click and drags.
+			app.mousedown = false;   // To disable selecting if input appears while mouse is still down.
+		    app.queue = $.Deferred();
+			app.queue.resolve();
+		    
+		},
+		
+		populate: function() {
+		    
+		    var callback = function(coll) {
+		        if (!coll.length) app.dispatcher.trigger('redos:empty');
+			};
+		    
+		    app.Marks.fetch(FETCH_OPTS);
+			app.Waypoints.fetch(FETCH_OPTS);
+			app.Undos.fetch(FETCH_OPTS);
+			app.Redos.fetch( _.extend(FETCH_OPTS, { success: callback }) );
+		    
+		},
+		
+		listen: function() {
+		    
+		    this.listenToCollection(app.Marks);
+			this.listenToCollection(app.Waypoints);
+			
+			this.listenToUndoKeys();
+		    
+		    var d = app.dispatcher = _.extend({}, Backbone.Events);  // Use extend to clone other objects?
+		    
+		    d.on('zoom', this.zoom, this);
+			d.on('undo', this.undo, this);
+			d.on('list', this.list, this);
+			d.on('clear:redos', this.clearRedos, this);
+			d.on('clear:selected', this.clearSelected, this);
+			d.on('undoMarker', this.undoMarker, this);
+			// Refine this: only check for marks being edited if inputs aren't open.
+			// Don't check inputs again when this is called from within toggleInput.
+			d.on('click:wall', this.hideInputs, this);
+		    
+		},
+		
+		listenToCollection: function(coll) {
+		    
+		    coll.on('add',   this.createViewForModel, this);
+		    coll.on('reset', this.renderCollection,   this);
+		    
+		},
+		
+		createViewForModel: function(model) {
+			
+			if (model.get('text')) {
+			    
+			    var constructor = (model.type === 'mark') ? app.MarkView : app.WaypointView;
+			    var view = new constructor({ model: model });			    
+			    $('#wall').append(view.el);                   // Render after appending so
+			    view.render();                                // `shrinkwrap` works appropriately.
+			    
+			}
+		},
+		
+		renderCollection: function(coll) {
+		    coll.each(this.createViewForModel, this);
+		},
+		
+		listenToUndoKeys: function() {
+		    
+		    var view = this;
+		    
+		    $(document).keydown(function(e) {
+		        
+		        if (e.which === Z_KEY && e.metaKey && e.shiftKey) {
+			        view.undo('redo');
+		        } else if (e.which === Z_KEY && e.metaKey) {
+			        view.undo();
+			    }
+			    
+	        });
+	        
+		},
+		
+	  /////////////////////////////
+	  // ***** INTERACTING ***** //
+	  /////////////////////////////
+		
+		hideInputs: function(e) {
+		    
+		    var open;
+		    
+		    open = this.closeInput(e, this.input);
+		    if (!open) open = this.closeInput(e, this.$('#waypoint-input'));
+		    
+		    return open;
+		    
+		},
+		
+		closeInput: function(e, $input) {
+		    
+		    if ($input.is(':visible')) {
+		        this.checkForNewModel(e, $input);
+		        return true;
+		    }
+		    
+		},
+		
+		waitThenToggle: function(e) {
+		                               // Noted so you can disable selector if
+		    app.mousedown = true;      // input appears while mouse is still down.
+		    
+		    var view = this;
+		    // Showing the input and dragging both stem from the mousedown event;
+		    // here we're waiting to see if the user drags before showing the input.
+		    // May be removed if we decide to use the click event instead of mousedown.
+		    setTimeout(function() {
+		        if (!app.dragging) view.toggleInput(e);
+		    }, WAIT_FOR_DRAG);
+		},
+		
+		toggleInput: function(e) {
+		    
+		    var open = this.hideInputs(e);
+		    
+		    if (!open) {  // Is either input open?
+		        
+		        if ($('.input:visible').length) {  // Any marks being edited?
+		            app.dispatcher.trigger('click:wall', e);  
+		        } else if ($('.ui-selected').length) {  // Any marks selected?
+		            app.dispatcher.trigger('clear:selected');
+		        } else {
+		            this.showInput(e);
+		        }
+		        
+		    }
+		},
+		
+		clearSelected: function() {
+		    
+		    this.$('.ui-selected').each(function() {
+                $(this).removeClass('ui-selected');
+            });
+            
+		},
+		
+		showInput: function(e) {
+		                                                          // Prevent selector from showing up
+		    if (app.mousedown) $('#wall').selectable('disable');  // if input has already appeared.
+		    
+		    var $input = this.input;
+		    
+		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
+		          .width(app.factor * ORIG_INPUT_WIDTH)
+		          .height(app.factor * ORIG_INPUT_HEIGHT)
+		          .show()
+		          .offset({
+		               left: e.pageX - INPUT_OFFSET_X,
+		               top:  e.pageY - INPUT_OFFSET_Y
+		           });
+		    
+		    $input.focus();
+		},
+		
+	  //////////////////////////////////
+	  // ***** CREATING OBJECTS ***** //
+	  //////////////////////////////////
+		
+		createMark: function(e) {
+		    // This fires on keypress: see if you can figure out how to
+		    // get $(this) despite backbone handling (research jquery delegate).
+		    this.checkForNewModel(e, this.input);
+		},
+		
+		createWaypoint: function(e) {
+		    this.checkForNewModel(e, this.$('#waypoint-input'));
+		},
+		
+		checkForNewModel: function(e, $input) {
+            
+            var clicking = e.pageX;
+		    
+		    if (clicking || e.which === ENTER_KEY) {
+		        
+			    var text = $input.val().trim();
+			    if (text) this.createModel($input, text);
+			    $input.hide();
+			    
+			}
+		},
+		
+		createModel: function($input, text) {
+		    
+		    var loc = $input.offset();
+		    
+			var attributes = {
+			    wall: WALL_URL,
+			    text: text,
+			    x:    loc.left / app.factor,
+			    y:    loc.top  / app.factor
+			};
+			
+			var coll = ($input == this.input) ? app.Marks : app.Waypoints;
+			
+			coll.create(attributes, { success: this.createEmptyUndo });
+			
+			$input.val('');
+		},
+		
+		createEmptyUndo: function(model) {
+			                              // Create a blank undo so object
+			app.Undos.create({            // creation can be undone / redone.
+			    
+			    wall:   WALL_URL,
+                type:   model.type,
+			    obj_pk: model.get('id'),
+			    text:   '',
+			    x:      0,
+			    y:      0
+			    
+			});
+			
+			app.dispatcher.trigger('clear:redos');
+		},
+		
+		undoMarker: function(type) {
+		    
+            app.Undos.create({
+                
+                wall: WALL_URL,
+                type: type      // 'group_end' or 'group_start'
+                
+            }, {
+                success: function() {
+                            if (type === 'group_start') app.dispatcher.trigger('saved');
+                         }
+            });
+        },
+		
+	  /////////////////////////
+	  // ***** LISTING ***** //
+	  /////////////////////////
+		
+		leftAlignMarks: function($marks) {
+		    
+		    var x = $marks.first().offset().left;  // Use top mark instead of first id?
+		    
+		    $marks.each(function() {
+		        
+		        $(this).animate({
+		            left: x
+		        }, {
+		            duration: LIST_ANIMATE,
+		            queue:    false
+		        });
+		        
+		    });
+		    
+		},
+		
+		list: function() {
+		    
+		    var $marks = this.$('.ui-selected').not('.waypoint');
+		    
+		    if($marks.length) {
+		        
+		        this.leftAlignMarks($marks);
+		        this.evenlySpace($marks);
+		        
+		        var $sample_item = $marks.first();
+		        
+		        // `.promise()` waits for all animations to finish:
+		        $marks.promise().done(function() {
+		            
+		            updateModels( $sample_item,
+		                          $sample_item.data('view').updateLocation,
+		                          $marks );
+		        });
+		        
+		    }
+		},
+		
+		sortMarksByTop: function(marks) {
+		    
+		    // Using insertion sort because array should be mostly sorted:
+		    // marks higher on the screen are likely to have been created earlier.
+		    for (var i = 1; i < marks.length; i++) {
+		        var j = i;
+		        while(j > 0) {  // Loop through all previous items in the array:
+		            var current = marks[j];
+		            var prev    = marks[j-1];
+		            var y = $(current).offset().top;
+		            if(y < $(prev).offset().top) {
+		                // If current item is has lower y-offset
+		                // than previous item, switch them:
+		                var temp   = current;
+		                marks[j]   = prev;
+		                marks[j-1] = temp;
+		                j--;
+		            } else {
+		                break;
+		            }
+		        }
+		    }
+		    
+		    return marks;
+		    
+		},
+		
+		evenlySpace: function($marks) {
+		    
+		    var marks = this.sortMarksByTop( $marks.get() );
+		    
+		    var $prev = $(marks[0]);
+		    var new_y = $prev.offset().top;
+		    var $mark;
+		    
+		    for (var i = 1; i < marks.length; i++) {
+		        // Add previous object y-value, previous object height,
+		        // and spacing to get next object y-value.
+		        new_y += $prev.outerHeight() + SPACING * app.factor;
+                $mark = $(marks[i]);
+		        
+		        $mark.animate({
+		            top: new_y
+		        }, {
+		            duration: LIST_ANIMATE,
+		            queue:    false
+		        });
+		        
+		        $prev = $mark;
+		    }
+		    
+		},
+		
+	  /////////////////////////
+	  // ***** UNDOING ***** //
+	  /////////////////////////
+		
+		undo: function(isRedo) {
+		    
+		    // NOTE: Terminology here assumes an undo is being performed. If a redo
+		    // is being performed, undo means redo and redo means undo (as you can
+		    // see from the assignments below).  I decided to leave it undo-specific
+		    // because using ambiguous names made the functions much less clear/readable.
+		    
+		    var Undos, Redos;
+		    
+		    if (isRedo) {
+		        Undos = app.Redos;  // Global redo collection
+		        Redos = app.Undos;  // Global undo collection
+		    } else {
+		        Undos = app.Undos;  // Global undo collection
+		        Redos = app.Redos;  // Global redo collection
+		    }
+		    
+		    var undo = Undos.pop();
+		    
+		    if (undo) {
+		        
+		        var type = undo.get('type');
+		        
+		        if (type === 'group_end') {
+		            
+		            console.log('broken');
+		            // If type is 'group_end', connection was lost during saving;
+		            // just ignore and move to the next undo.
+		            this.undo(isRedo);
+		            
+		        } else if (type === 'group_start') {
+		            
+		            undo.destroy();
+		            Redos.create({ wall: WALL_URL, type: 'group_end' });
+		            this.performUndo(Undos.pop(), Undos, Redos, true);
+		            
+		        } else {
+		            this.performUndo(undo, Undos, Redos);
+		        }
+		        
+		    }
+		    
+		},
+		
+		currentState: function(obj) {
+		    return {
+		        wall:   WALL_URL,
+                type:   obj.type,
+			    obj_pk: obj.get('id'),
+			    text:   obj.get('text'),
+			    x:      obj.get('x'),
+			    y:      obj.get('y')
+			};		    
+		},
+		
+		formerState: function(undo) {
+		    return {
+		        text: undo.get('text'),
+		        x:    undo.get('x'),
+		        y:    undo.get('y')
+		    };
+		},
+		
+		getUndoColl: function(type) {
+		    
+		    if (type === 'mark') {
+		        return app.Marks;
+		    } else if (type === 'waypoint') {
+		        return app.Waypoints;
+		    }
+		    
+		},
+		
+		performUndo: function(undo, Undos, Redos, group) {
+		        
+		        var coll = this.getUndoColl( undo.get('type') );
+		        var obj  = coll.get( undo.get('obj_pk') );
+                
+                Redos.create( this.currentState(obj) );
+                obj.save( this.formerState(undo) );
+                undo.destroy({
+                    success: function() {
+                                if (!group) app.dispatcher.trigger('saved:undo');
+                             }
+                });
+                
+                if (group) this.recurseUndo(Undos, Redos);
+		},
+		
+		recurseUndo: function(Undos, Redos) {
+		    
+		    var undo = Undos.pop();
+		    
+            if (undo.get('type') === 'group_end') {
+		        
+		        undo.destroy();
+		        Redos.create({
+		            wall: WALL_URL,
+		            type: 'group_start'
+		        }, {
+		            success: function() {
+		                app.dispatcher.trigger('saved:undo');
+		            }
+		        });
+		        
+		    } else {
+                this.performUndo(undo, Undos, Redos, true);
+            }
+		},
+		
+	  /////////////////////////
+	  // ***** ZOOMING ***** //
+	  /////////////////////////
+		
+		checkForZoom: function(e) {
+		    
+		    if (e.which === UP_KEY || e.which === DOWN_KEY) {
+		        
+		        if (this.$('.input:visible').length) return;  // Don't zoom when editing a mark.
+		        
+		        e.preventDefault();   // Prevent arrow keys from panning the window up and down.
+		        
+		        if (!this.keyDown) {  // Prevent multiple zooms when holding down arrow keys.
+		            
+		            this.keyDown = true;
+		            this.listenForKeyup();
+		            
+		            this.zoom( (e.which === UP_KEY) ? ZOOM_IN_FACTOR : ZOOM_OUT_FACTOR );
+		            
+		        }
+		        
+		    }
+		},
+		
+		listenForKeyup: function() {
+		    
+		    var view = this;
+		    
+		    $(window).keyup(function() {
+		        
+		        view.keyDown = false;
+		        $(window).unbind('keyup');
+		        
+		    });
+		},
+		
+		zoom: function(rel_factor) {
+		    
+		    var $wall = $('#wall');
+		    
+		    var new_width  = $wall.width()  * rel_factor;
+            var new_height = $wall.height() * rel_factor;
+            var new_factor = app.factor * rel_factor;
+            
+            if( new_width  > $(window).width()  &&  // Don't shrink page below window size.
+                new_height > $(window).height() &&
+                new_factor < MAX_FACTOR ) {
+                
+                app.factor = new_factor;  // Update absolute zoom factor.
+                app.dispatcher.trigger('zoom:objects', rel_factor);  // Zoom marks and zoom page.
+                this.resizePage(new_width, new_height, $wall);
+		        this.recenterWindow(rel_factor);
+		        
+		    }
+		    
+		},
+		
+		resizePage: function(new_width, new_height, $wall) {
+		    
+		    $wall.animate({
+		        
+		        width:  new_width,
+		        height: new_height
+		        
+		    }, ANIM_OPTS);
+		    
+		},
+        
+        recenterWindow: function(rel_factor) {  // Page grows/shrinks from right and bottom
+                                                // during zoom, so needs to be recentered.
+            var $w = $(window);
+            var half_width  = $w.width()  / 2;
+            var half_height = $w.height() / 2;
+            
+            var old_x_center = $w.scrollLeft() + half_width;  // Page movement needs to be calibrated
+            var new_x_center = rel_factor * old_x_center;     // from center, not top-left.
+            
+            var old_y_center = $w.scrollTop() + half_height;
+            var new_y_center = rel_factor * old_y_center;
+            
+            $('html, body').animate({
+                
+                scrollLeft: new_x_center - half_width,
+                scrollTop:  new_y_center - half_height
+                
+            }, ANIM_OPTS);
+        },
+		
+	  ///////////////////////////////
+	  // ***** MISCELLANEOUS ***** //
+	  ///////////////////////////////
+		
+		clearRedos: function() {
+		    
+		    var coll  = app.Redos;
+		    var model = coll.pop();
+		    
+            while (model) {
+                model.destroy();
+                model = coll.pop();
+            }
+		},
+		
+		resetDragging: function() {
+		    
+		    app.dragging = false;
+		    
+		    app.mousedown = false;
+		    this.$('#wall').selectable('enable');
+		},
+		
+		doNothing: function(e) { e.stopPropagation(); },
+		
+				calculateTime: function(start, type) {
 		    
 		    var end = new Date();
 		    var time = end - start;
@@ -154,500 +683,6 @@ var ADD_TO_COLL = { success: addToColl };
 //		    this.timeGrouped(a, b, c, d, e);
 		    
 		},
-		
-		createViewForModel: function(model) {
-			
-			var view;
-			if(model.type === 'mark')
-			    view = new app.MarkView({ model: model });
-			else if(model.type === 'waypoint')
-			    view = new app.WaypointView({ model: model });
-			
-			if (model.get('text')) {
-			    
-			    this.$('#wall').append(view.el);
-			    
-			    // Render after appending so 'shrinkwrap' works appropriately:
-			    view.render();
-			}
-		},
-		
-		addMarks:     function() { app.Marks.each(this.createViewForModel, this); },
-		addWaypoints: function() { app.Waypoints.each(this.createViewForModel, this); },
-		
-		hideInputs: function(e) {
-		    
-		    var open = false;
-		    
-		    if(this.input.is(':visible')) {
-		        
-		        this.createMark(e);
-		        open = true;
-		        
-		    } else if(this.$('#waypoint-input').is(':visible')) {
-		        
-		        this.createWaypoint(e);
-		        open = true;
-		        
-		    }
-		    
-		    return open;
-		},
-		
-		waitThenToggle: function(e) {
-		    
-		    // Noted so you can disable selector if
-		    // input appears while mouse is still down:
-		    app.mousedown = true;
-		    
-		    var view = this;
-		    // Showing the input and dragging both stem from the mousedown event;
-		    // here we're waiting to see if the user drags before showing the input.
-		    // May be removed if we decide to use the click event instead of mousedown.
-		    setTimeout(function() {
-		        if (!app.dragging) view.toggleInput(e);
-		    }, WAIT_FOR_DRAG);
-		},
-		
-		toggleInput: function(e) {
-		    
-		    // Is either input open?
-		    var open = this.hideInputs(e);
-		    
-		    if(!open) {
-		        
-		        if (this.$('.input:visible').length) {
-		            // Any marks being edited?
-		            app.dispatcher.trigger('wallClick', e);
-		            
-		        } else if (this.$('.ui-selected').length) {
-		            // Any marks selected?
-		            app.dispatcher.trigger('clearSelected');
-		            
-		        } else {
-		            
-		            this.showInput(e, this.input);
-		            
-		        }
-		        
-		    }
-		},
-		
-		clearSelected: function() {
-		    this.$('.ui-selected').each(function() {
-                $(this).removeClass('ui-selected');
-            });
-		},
-		
-		showInput: function(e, $input) {
-		    
-		    // Prevent selector from showing up if input has already appeared:
-		    if (app.mousedown) this.$('#wall').selectable('disable');
-		    
-		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
-		          .width(app.factor * ORIG_INPUT_WIDTH)
-		          .height(app.factor * ORIG_INPUT_HEIGHT)
-		          .show()
-		          .offset({
-		               left: e.pageX - INPUT_OFFSET_X,
-		               top:  e.pageY - INPUT_OFFSET_Y
-		           });
-		    
-		    $input.focus();
-		},
-		
-		createMark: function(e) {
-		    // Possible to put these arguments in 'events' up top?
-		    this.prepareModel(e, this.input, app.Marks);
-		},
-		
-		createWaypoint: function(e) {
-		    this.prepareModel(e, this.$('#waypoint-input'), app.Waypoints);
-		},
-		
-		prepareModel: function(e, $input, coll) {
-                
-                var clicking = e.pageX;
-		        var enter = (e.which === ENTER_KEY);
-		        
-		        if (clicking || enter) {
-		            
-			        var text = $input.val().trim();
-			        if(text) this.createModel($input, coll, text);
-			        $input.hide();
-			        
-			    }
-		},
-		
-		createModel: function($input, coll, text) {
-		    
-		    var loc = $input.offset();
-			var attributes = {
-			    wall: WALL_URL,
-			    text: text,
-			       x: loc.left / app.factor,
-			       y: loc.top  / app.factor
-			};
-			
-			coll.create(attributes, { success: this.createEmptyUndo });
-			
-			$input.val('');
-		},
-		
-		createEmptyUndo: function(model) {
-			
-			// Create a blank undo object so creation can be undone / redone:
-			app.Undos.create({
-			    wall: WALL_URL,
-                type: model.type,
-			  obj_pk: model.get('id'),
-			    text: '',
-			       x: 0,
-			       y: 0
-			});
-			
-			app.dispatcher.trigger('clearRedos');
-		},
-		
-		undoMarker: function(type, deferred) {
-		    
-            app.Undos.create({
-                wall: WALL_URL,
-                type: type  // 'group_end' or 'group_start'
-            }, {
-                success: function() {
-                             if (deferred) {
-                                deferred.resolve();
-                                if (type === 'group_start') app.dispatcher.trigger('doneSaving');
-                             }
-                         }
-            });
-        },
-		
-		list: function() {
-		    
-		    var $marks = this.$('.ui-selected').not('.waypoint');
-		    
-		    if($marks.length) {
-		        
-		        var x = $marks.first().offset().left;  // Use top mark instead of first id?
-		        
-		        // Align marks on the left side:
-		        $marks.each(function() {
-		            
-		            $(this).animate({
-		                left: x
-		            }, {
-		                duration: LIST_ANIMATE,
-		                queue:    false
-		            });
-		            
-		        });
-		        
-		        this.evenlySpace($marks);
-		        
-		        var $sample_item = $marks.first();
-		        
-		        // `.promise()` waits for all animations to finish:
-		        $marks.promise().done(function() {
-		            
-		            updateModels( $sample_item,
-		                          $sample_item.data('view').updateLocation,
-		                          $marks );
-		        });
-		        
-		    }
-		},
-		
-		// Decompose this function.
-		evenlySpace: function($marks) {
-		    
-		    // .get() returns array from jQuery object:
-		    var marks = $marks.get();
-		    
-		    // Using insertion sort because array should be mostly sorted:
-		    // marks higher on the screen are likely to have been created earlier.
-		    for (var i = 1; i < marks.length; i++) {
-		        var j = i;
-		        while(j > 0) {  // Loop through all previous items in the array:
-		            var current = marks[j];
-		            var prev    = marks[j-1];
-		            var y = $(current).offset().top;
-		            if(y < $(prev).offset().top) {
-		                // If current item is has lower y-offset
-		                // than previous item, switch them:
-		                var temp   = current;
-		                marks[j]   = prev;
-		                marks[j-1] = temp;
-		                j--;
-		            } else {
-		                break;
-		            }
-		        }
-		    }
-		    
-		    // Use recursion here?
-		    var $prev = $(marks[0]);
-		    var new_y = $prev.offset().top;
-		    var $mark;
-		    
-		    for (var i = 1; i < marks.length; i++) {
-		        // Add previous object y-value, previous object height,
-		        // and spacing to get next object y-value.
-		        new_y += $prev.outerHeight() + SPACING * app.factor;
-                $mark = $(marks[i]);
-		        
-		        $mark.animate({
-		            top: new_y
-		        }, {
-		            duration: LIST_ANIMATE,
-		            queue:    false
-		        });
-		        
-		        $prev = $mark;
-		    }
-		    
-		},
-		
-		resetDragging: function() {
-		    
-		    app.dragging = false;
-		    
-		    app.mousedown = false;
-		    this.$('#wall').selectable('enable');
-		},
-		
-		clearRedos: function() {
-		    
-		    var coll  = app.Redos;
-		    var model = coll.pop();
-		    
-            while (model) {
-                model.destroy();
-                model = coll.pop();
-            }
-		},
-		
-		undoKeys: function() {
-		    var view = this;
-		    $(document).keydown(function(e) {
-		        if(e.which === Z_KEY && e.metaKey && e.shiftKey)
-			        view.undo(true);
-		        else if(e.which === Z_KEY && e.metaKey)
-			        view.undo(false);
-	        });
-		},
-		
-		addRedo: function(redo) {
-		    
-		},
-		
-		undo: function(isRedo) {
-		    
-		    var Undos, Redo, Redos;
-		    
-		    // NOTE: Terminology here assumes an undo is being performed. If a redo
-		    // is being performed, undo means redo and redo means undo (as you can
-		    // see from the assignments below).  I decided to leave it undo-specific
-		    // because using ambiguous names made the functions much less clear/readable.
-		    
-		    if (isRedo) {
-		        Undos = app.Redos;  // Global redo collection
-		        Redo = app.Undo;    // Undo model constructor
-		        Redos = app.Undos;  // Global undo collection
-		    } else {
-		        Undos = app.Undos;  // Global undo collection
-		        Redo = app.Redo;    // Redo model constructor
-		        Redos = app.Redos;  // Global redo collection
-		    }
-		    
-		    var undo = Undos.pop();
-		    
-		    if (undo) {
-		        
-		        app.dispatcher.trigger('saving');
-		        
-		        var type = undo.get('type');
-		        
-		        if (type === 'group_end') {
-		            
-		            // If type is 'group_end', connection was lost during saving;
-		            // just ignore and move to the next undo.
-		            this.undo(isRedo);
-		            
-		        } else if (type === 'group_start') {
-		            
-		            // 'group_end' created first because undos are accessed LIFO:
-		            var marker = new Redo({ wall: WALL_URL, type: 'group_end' });
-		            
-		            var switchMarkers = function() {
-		                
-		                return $.when( marker.save({}, ADD_TO_COLL),
-		                               undo.destroy() );
-		            };
-		            
-		            var view = this;
-		            switchMarkers().done(function() {
-//		            app.lastGroup = app.lastGroup.then(switchMarkers).then(function() {
-		                view.performUndo(Undos.pop(), Undos, Redo, Redos, []);
-		            });
-		            
-		        } else {
-		            this.performUndo(undo, Undos, Redo, Redos);
-		        }
-		        
-		    }
-		    
-		},
-		
-		performUndo: function(undo, Undos, Redo, Redos, group) {
-		        
-		        var coll;
-		        if      (undo.get('type') === 'mark')     coll = app.Marks;
-		        else if (undo.get('type') === 'waypoint') coll = app.Waypoints;
-		        
-		        // Find the object that the undo refers to:
-		        var pk  = undo.get('obj_pk');
-		        var obj = coll.get(pk);
-		        
-		        // Save current object state and build a `redo` with it:
-		        var current_state = {
-		            wall: WALL_URL,
-                    type: obj.type,
-			      obj_pk: obj.get('id'),
-			        text: obj.get('text'),
-			           x: obj.get('x'),
-			           y: obj.get('y')
-			    };
-			    
-			    var redo = new Redo(current_state);
-		        
-		        // Save former state to update object with:
-		        var former_state = {
-		            text: undo.get('text'),
-		               x: undo.get('x'),
-		               y: undo.get('y')
-		        };
-		        
-                var saving;
-//                app.lastGroup = app.lastGroup.then(function() {
-                
-                
-                
-                saving = $.when( obj.save(former_state),
-                                     redo.save({}, ADD_TO_COLL),
-                                     undo.destroy() );
-                if (group) {
-                    group.push(saving);
-                    this.recurseUndo(Undos, Redo, Redos, group);
-		        } else {
-		            saving.done(function() { app.dispatcher.trigger('doneSaving'); });
-		        }
-		},
-		
-		recurseUndo: function(Undos, Redo, Redos, group) {
-		    
-		    var undo = Undos.pop();
-		    
-		    // ignore certain starts / ends in case connection is lost during processing?
-            if (undo.get('type') === 'group_end') {
-		        
-		        undo.destroy();
-		        
-		        var marker = new Redo({ wall: WALL_URL, type: 'group_start' });
-		        
-		        $.when.apply(null, group).done(function() {
-                    
-                    marker.save({}, {
-                        success: function(marker) {
-                                     Redos.add(marker);
-		                             app.dispatcher.trigger('doneSaving');
-                                 }
-                    });
-                    
-                });
-		        
-		    } else {
-                this.performUndo(undo, Undos, Redo, Redos, group);
-            }
-		},
-		
-		checkForZoom: function(e) {
-		    
-		    // Let user move up and down rows in inputs normally:
-		    if (this.$('.input:visible').length) return;
-		    
-		    if (!this.keyDown) {  // Prevent multiple zooms from holding down arrow keys.
-		        
-		        this.keyDown = true;
-		        
-		        var view = this;
-		        $(window).keyup(function() {
-		            view.keyDown = false;
-		            $(window).unbind('keyup');
-		        });
-		        
-		        // Determine relative zoom factor:
-		        var rel_factor;
-		        if (e.which === UP_KEY) {
-		            e.preventDefault();
-		            rel_factor = ZOOM_IN_FACTOR;
-		            this.zoom(rel_factor);
-		        } else if (e.which === DOWN_KEY) {
-		            e.preventDefault();
-		            rel_factor = ZOOM_OUT_FACTOR;
-		            this.zoom(rel_factor);
-		        }
-		        
-		    } else if (e.which === UP_KEY || e.which === DOWN_KEY) {
-		        e.preventDefault();  // Prevent arrow keys from panning the window up and down.
-		    }
-		},
-		
-		zoom: function(rel_factor) {
-		    
-		    // Calculate new page size:
-		    var new_width  = $('#wall').width()  * rel_factor;
-            var new_height = $('#wall').height() * rel_factor;
-            var new_factor = app.factor * rel_factor;
-            
-            // Don't shrink page below window size:
-            if( new_width  > $(window).width()  &&
-                new_height > $(window).height() &&
-                new_factor < MAX_FACTOR ) {
-                
-                // Update absolute zoom factor:
-                app.factor = new_factor;
-                
-                // Zoom marks and zoom page.
-                app.dispatcher.trigger('zoomObjects', new_width, new_height);
-                this.resizePage(new_width, new_height);
-		        this.recenterWindow(rel_factor);
-		    }
-		},
-		
-		resizePage: function(new_width, new_height) {
-		    $('#wall').animate({ width:  new_width  }, ANIM_OPTS);
-            $('#wall').animate({ height: new_height }, ANIM_OPTS);
-		},
-        
-        recenterWindow: function(rel_factor) {
-            // Page grows/shrinks from right and bottom, so page needs to be recentered.
-            
-            var $w = $(window);
-            
-            // Page movement needs to be calibrated from page center,
-            // rather than top-left:
-            var current_x_center = $w.scrollLeft() + $w.width()/2;
-            var new_x_center = rel_factor * current_x_center;
-            $('html, body').animate({ scrollLeft: new_x_center - $w.width()/2 }, ANIM_OPTS);
-            
-            var current_y_center = $w.scrollTop() + $w.height()/2;
-            var new_y_center = rel_factor * current_y_center;
-            $('html, body').animate({ scrollTop: new_y_center - $w.height()/2 }, ANIM_OPTS);
-        },
-		
-		doNothing: function(e) { e.stopPropagation(); }
         
 	});
 	

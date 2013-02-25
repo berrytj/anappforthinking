@@ -32,7 +32,7 @@ var BOTTOM_INDEX = 10;
 		
 		initialize: function() {
 		    app.ObjectView.prototype.initialize.call(this);
-		    app.dispatcher.on('wallClick', this.finishEditing, this);
+		    app.dispatcher.on('click:wall', this.finishEditing, this);
 		},
 		
 		zoomSize: function() {
@@ -82,7 +82,7 @@ var BOTTOM_INDEX = 10;
 		        
 		    } else {  // Actually edit the mark:
 		        
-		        app.dispatcher.trigger('clearSelected');
+		        app.dispatcher.trigger('clear:selected');
 		        
 		        var height = $mark.height();
 		        var width;
@@ -128,9 +128,12 @@ var BOTTOM_INDEX = 10;
 			            if(text) {
 			                
 			                if (this.model.get('text') !== text) {  // If text actually changed:
+			                    
 			                    this.createUndo(this.model.get('text'));
 			                    this.model.save({ text: text });
+			                    
 			                }
+			                
 			                $input.hide();
 			                
 			            } else {

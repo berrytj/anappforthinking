@@ -3,13 +3,13 @@
 
 var app = app || {};
 var HIDE_TIME = 500;
-var INPUT_HEIGHT = 100;  // Can't use .height() because of padding.
+var INPUT_HEIGHT = 100;  // Can't use .height() because of padding -- try outerHeight()
 var ARROW_PADDING = 8;
 
 (function() {
     
     'use strict';
-    	
+    
 	app.WaypointTagsView = Backbone.View.extend({
 	    
 	    el: '#waypoint-tags',
@@ -23,7 +23,7 @@ var ARROW_PADDING = 8;
 		},
 		
 		initialize: function() {
-		    app.dispatcher.on('waypointCreated', this.createTag, this);
+		    app.dispatcher.on('waypoint:created', this.createTag, this);
 		},
 		
 		hideTags: function() {

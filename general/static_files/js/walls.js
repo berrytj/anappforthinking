@@ -27,14 +27,20 @@ $(function() {
             // Modified jquery-ui source to add-to-selection when holding shift.
             // (Add-to-selection is default behavior when holding cmd / ctrl.)
             app.dragging = true;  // To prevent input field from opening due to mousedown.
-            app.dispatcher.trigger('wallClick', e);
+            app.dispatcher.trigger('click:wall', e);
             // Update to avoid triggering this when shift-selecting:
-            app.dispatcher.trigger('enableList', false);
+            app.dispatcher.trigger('enable:list', false);
         },
         stop: function() {
-            if ($('.ui-selected').length) app.dispatcher.trigger('enableList', true);
+            if ($('.ui-selected').length) app.dispatcher.trigger('enable:list', true);
         },
     });
+    
+    var alert = 'Data is still being sent to the server.  You may lose unsaved changes if you close this page.';
+    
+    window.onbeforeunload = function() {
+        if (app.queue.state() === 'pending') return alert;
+    };
 	
 });
 

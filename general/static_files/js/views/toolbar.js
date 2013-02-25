@@ -22,31 +22,30 @@ var app = app || {};
 		},
 		
 		initialize: function() {
+		    
 		    this.undoEnabled = true;
 		    this.listEnabled = false;
-		    app.dispatcher.on('undoComplete',  this.doneSaving,       this);
-		    app.dispatcher.on('saving',        this.saving,           this);
-		    app.dispatcher.on('doneSaving',    this.doneSaving,       this);
-		    app.dispatcher.on('enableList',    this.enableList,       this);
-		    app.dispatcher.on('clearSelected', this.disableList,      this);
-		    app.dispatcher.on('clearRedos',    this.fadeRedoButton,   this);
-		    app.dispatcher.on('redosEmpty',    this.fadeRedoButton,   this);
-		    app.dispatcher.on('redosExist',    this.unfadeRedoButton, this);
+		    
+		    var d = app.dispatcher;
+		    
+		    d.on('saved:undo',    this.doneSavingUndo,   this);
+		    d.on('saving',        this.saving,           this);
+		    d.on('saved',         this.doneSaving,       this);
+		    d.on('enable:list',    this.enableList,       this);
+		    d.on('clear:selected', this.disableList,      this);
+		    d.on('clear:redos',    this.fadeRedoButton,   this);
+		    d.on('redos:empty',    this.fadeRedoButton,   this);
+		    d.on('redos:exist',    this.unfadeRedoButton, this);
 		},
 		
 		unfadeRedoButton: function() {
-		    
 		    this.$('#redo-button').removeClass('button-disabled');
-		    
 		},
 		
 		fadeRedoButton: function() {
-		    
 		    this.$('#redo-button').addClass('button-disabled');
-		    
 		},
 		
-		// Put these functions into app.js instead of separating into toolbar view?
 		zoomIn:      function() { app.dispatcher.trigger('zoom', ZOOM_IN_FACTOR);  },
 		zoomOut:     function() { app.dispatcher.trigger('zoom', ZOOM_OUT_FACTOR); },
 		
@@ -56,33 +55,43 @@ var app = app || {};
 		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {
+		    
 		    if(this.undoEnabled) {
-		        this.saving();
+		        this.savingUndo();
 		        app.dispatcher.trigger('undo', false);
 		    }
 		},
 		
 		redo: function() {
+		    
 		    if(this.undoEnabled) {
-		        this.saving();
+		        this.savingUndo();
 		        app.dispatcher.trigger('undo', true);
 		    }
 		},
 		
 		saving: function() {
-		    
-//		    this.undoEnabled = false;
 		    this.$('#saving').text('saving...');
-//		    this.$('#undo-button').addClass('button-disabled');
-//		    this.$('#redo-button').addClass('button-disabled');
 		},
 		
 		doneSaving: function() {
-		    
-//		    this.undoEnabled = true;
 		    this.$('#saving').text('saved');
-//		    if (app.Undos.length) this.$('#undo-button').removeClass('button-disabled');
-//		    if (app.Redos.length) this.$('#redo-button').removeClass('button-disabled');
+		},
+		
+		savingUndo: function() {
+		    
+		    this.undoEnabled = false;
+		    this.saving();
+		    this.$('#undo-button').addClass('button-disabled');
+		    this.$('#redo-button').addClass('button-disabled');
+		},
+		
+		doneSavingUndo: function() {
+		    
+		    this.undoEnabled = true;
+		    this.doneSaving();
+		    if (app.Undos.length) this.$('#undo-button').removeClass('button-disabled');
+		    if (app.Redos.length) this.$('#redo-button').removeClass('button-disabled');
 		},
 		
 		disableList: function() {

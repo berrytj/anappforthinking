@@ -15,20 +15,6 @@ var API_NAME = '/api/v1';
 			x: 0,
 			y: 0
 		},
-		
-		initialize: function() {
-            this.queue = $.Deferred();
-            this.queue.resolve();
-        },
-        
-        save: function(attrs, options) {
-            
-            var model = this;
-            this.queue = this.queue.then(function() {
-                return Backbone.Model.prototype.save.call(model, attrs, options);
-            });
-            
-        },
         
     });
     

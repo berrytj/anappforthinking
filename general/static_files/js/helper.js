@@ -1,38 +1,3 @@
-var addToColl = function(model) {
-	
-	var collection;
-	
-	switch (model.coll) {
-		case 'undo':
-		    collection = app.Undos;
-		    break;
-		case 'redo':
-		    collection = app.Redos;
-		    break;
-	}
-	
-	collection.add(model);
-	
-};
-
-var updateEach = function(update, $group, savingUndos) {
-    
-    $group.each(function() {                    
-        // Invoke the `update` function parameter, binding each object's view in turn as `this`.
-        savingUndos.push( update.apply( $(this).data('view') ) );
-    });
-    
-    return savingUndos;
-};
-
-var groupEnd = function(savingUndos) {
-    
-    $.when.apply(null, savingUndos).done(function() {
-        app.dispatcher.trigger('undoMarker', 'group_start', app.savingGroup);
-    });
-    
-};
-
 var updateModels = function($obj, update, $group) {
     
     app.dispatcher.trigger('saving');
@@ -41,22 +6,19 @@ var updateModels = function($obj, update, $group) {
         
         if (!$group) $group = $('.ui-selected');
         
-        if ( (app.savingGroup.state()) === 'resolved' ) {
+        if ( (app.queue.state()) === 'resolved' ) {
             
-            app.savingGroup  = $.Deferred();
-            var savingMarker = $.Deferred();
-            var savingUndos  = [];
+            app.dispatcher.trigger('undoMarker', 'group_end');
             
-            app.dispatcher.trigger('undoMarker', 'group_end', savingMarker);
+            $group.each(function() {
+                update.call( $(this).data('view') );
+            });
             
-            savingUndos = updateEach(update, $group, savingUndos);
-            groupEnd(savingUndos);
-            
+            app.dispatcher.trigger('undoMarker', 'group_start');
         }
         
     } else {
-        update.apply( $obj.data('view') );
-        app.dispatcher.trigger('doneSaving');
+        update.call($obj.data('view'), true);
     }
     
 };

@@ -7,11 +7,7 @@
 	width:100%;
 }
 
-.not-using {
-    
-}
-
-#menu-background-gradient {
+#menu-gradient {
 	z-index:9999;
 	
     background: rgb(229,210,167); /* Old browsers */
@@ -84,11 +80,15 @@
     -webkit-background-clip:text;
     -moz-background-clip:text;
     background-clip:text;
+    
+    height:23px;
+    margin-top:-2px;
+    padding-top:2px;
 }
 
 .bar {
     cursor:default;
-    padding:0;
+    padding:2px 0 0 0;
 }
 
 .button-disabled {

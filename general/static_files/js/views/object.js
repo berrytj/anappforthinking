@@ -16,106 +16,102 @@ var app = app || {};
 		    'mousedown': 'cleanup',
 		},
         
-		// The MarkView listens for changes to its model, re-rendering. Since there's
-		// a one-to-one correspondence between a **Mark** and a **MarkView** in this
-		// app, we set a direct reference on the model for convenience.
 		initialize: function() {
+			                                             // Update view when model changes, e.g. after
+			this.model.on('change', this.render, this);  // editing text, performing undo, or trashing.
 			
-			// Update view when model changes, e.g. after editing
-			// text, performing undo, or trashing:
-			this.model.on('change',  this.render, this);
+			                                // Give the element a pointer to its view so you
+			this.$el.data('view', this);    // can access it, e.g. after dragging or dropping).
 			
-			app.dispatcher.on('zoomObjects', this.zoom, this);
-			
-			// Give the element a pointer to its view so you
-			// can access it e.g. after dragging or dropping):
-			this.$el.data('view', this);
+			app.dispatcher.on('zoom:objects', this.zoom, this);
 		},
 		
-		// Render the mark.
 		render: function() {
 		    
 		    var onPage = this.$el.parents().length;
 		    
 		    if (this.model.get('text')) {
 		        
-		        if (!onPage) {
-		            this.$el.appendTo('#wall')
-		                    .removeClass('ui-draggable-dragging dragged dropped');
-		            
-		            // Destroy draggable after re-appending or dragging won't
-		            // work (object gets made draggable again below):
-		            if (this.$el.hasClass('ui-draggable')) this.$el.draggable('destroy');
-		        }
+		        if (!onPage) this.putBackOnPage(this.$el);
 		        
                 this.$el.html(this.template(this.model.toJSON()))
 			            .animate({
+			                
 			                left: this.model.get('x') * app.factor,
 			                top:  this.model.get('y') * app.factor
+			                
 			             }, ANIM_OPTS);
 			    
 			    this.zoomSize();
-			    
-			    // Move this out of 'render' so it only gets called once?
-			    // Doesn't work in 'initialize' (too early): causes additional
-			    // objects in a dragging group to jump.
-			    this.makeDraggable();
-			    
-			} else if(onPage) {
-			    // Detach element if it's on page without any text, e.g.
-			    // after deleting or redo-deleting.
-			    this.$el.detach();
+			                           // Move this out of 'render' so it only gets called once?
+			    this.makeDraggable();  // Doesn't work in 'initialize' (too early): causes additional
+			                           // objects in a dragging group to jump. Use _.once?
+			} else if (onPage) {
+			                           // Detach element if it's on page without any
+			    this.$el.detach();     // text, e.g. after deleting or redo-deleting.
 			}
-            
-            // Return view so you can chain this function,
-            // e.g. `append(view.render().el)`.
-			return this;
+                                       // Return view so you can chain this function,
+			return this;               // e.g. `append(view.render().el)`.
 		},
 		
-		zoom: function(new_width, new_height) {
+		putBackOnPage: function($el) {
+		    
+		    $el.appendTo('#wall')
+		       .removeClass('ui-draggable-dragging dragged dropped');
+		                                                                 // Destroy draggable after re-appending
+		    if ($el.hasClass('ui-draggable')) $el.draggable('destroy');  // or dragging won't work. (Object gets
+		},                                                               // made draggable again below.)
+		
+		zoom: function(rel_factor) {
             
             this.zoomSize();
             
             var pos = this.$el.offset();
-            var new_x = new_width  * (pos.left / $('#wall').width());
-            var new_y = new_height * (pos.top / $('#wall').height());
-            this.$el.animate({ left: new_x, top: new_y }, ANIM_OPTS);
+            
+            this.$el.animate({
+                
+                left: pos.left * rel_factor,
+                top:  pos.top  * rel_factor
+                
+            }, ANIM_OPTS);
 		},
 		
-		updateLocation: function() {
+		updateLocation: function(solo) {
 		    
-		    var x = this.model.get('x');
-		    var y = this.model.get('y');
+		    this.createUndo();
 		    
 		    var loc = this.$el.offset();
 		    
-		    var wait = $.Deferred();
-		    
 		    this.model.save({
+		        
 		        x: loc.left / app.factor,
 		        y: loc.top  / app.factor
+		        
 		    }, {
 		        // Element has already moved; pass silent to
 		        // avoid micro-movements due to re-rendering:
 		        silent: true,
 		        success: function() {
-		                     wait.resolve();
+		                    if (solo) app.dispatcher.trigger('saved');
 		                 }
 		    });
 		    
-		    return this.createUndo(null, x, y, wait);
 		},
 		
 		cleanup: function(e) {
+		    
 		    e.stopPropagation();
-		    app.dispatcher.trigger('wallClick', e);
-		    // Free the element to be edited next time it gets clicked:
+		    
+		    app.dispatcher.trigger('click:wall', e);
+		    
+		    // Free the element to be edited
+		    // next time it gets clicked:
 		    this.$el.removeClass('dragged');
 		},
 		
-		createUndo: function(text, x, y, wait) {
+		createUndo: function() {
 		    
-		    app.dispatcher.trigger('clearRedos');
+		    app.dispatcher.trigger('clear:redos');
 		    
 		    // Quicker way to transfer multiple attributes?
 		    // Have undo and mark both extend object model?
@@ -123,85 +119,107 @@ var app = app || {};
                 wall: WALL_URL,
                 type: this.model.type,
 			  obj_pk: this.model.get('id'),
-			    text: text || this.model.get('text'),
-			       x: x    || this.model.get('x'),
-			       y: y    || this.model.get('y')
+			    text: this.model.get('text'),
+			       x: this.model.get('x'),
+			       y: this.model.get('y')
 			};
 			
-			var undo = new app.Undo(current_state);
-			
-			var saved = wait.then(function() {
-			    return undo.save({}, {
-			               success: function(model) {
-			                           app.Undos.add(model);
-			                        }
-			           });
-			});
-			
-			// Returning a jqXHR (deferred) object so the updateModels
-			// function will know when undos are finished being added
-			// (and then can go ahead and place 'group_start' marker).
-			return saved;
+			app.Undos.create(current_state);
 		},
 		
-		// Decompose and share function with updateLocation?
-		clear: function() {
-		    var text = this.model.get('text');
-		    var wait = $.Deferred;
-		    this.model.save({ text: '' }, { success: function() { wait.resolve(); } });
-		    return this.createUndo(text, null, null, wait);
+		clear: function(solo) {
+		    
+		    this.createUndo();
+		    
+		    this.model.save({
+		        text: ''
+		    }, {
+		        success: function() {
+		                    if (solo) app.dispatcher.trigger('saved');
+		                 }
+		    });
+		    
 		},
 		
-		doNothing: function(e) { e.stopPropagation(); },
+		setInitialDragPositions: function(ui) {
+		    
+		    // If dragging selected mark, save initial location
+            // of all selected marks as basis for relative position
+            // adjustments during dragging:
+            $('.ui-selected').each(function() {
+                
+                var pos = $(this).offset();
+                
+                $(this).data({
+                    'x': pos.left - ui.position.left,
+                    'y': pos.top  - ui.position.top
+                });
+                
+            });
+		    
+		},
+		
+		updateDragPositions: function(ui) {
+		    
+		    // Move all selected marks relative to their initial position:
+            $('.ui-selected').each(function() {
+                
+                $(this).css({
+                    left: $(this).data('x') + ui.position.left,
+                    top:  $(this).data('y') + ui.position.top
+                });
+                
+            });
+		    
+		},
 		
 		makeDraggable: function() {
 		    
-		    var view = this; 
+		    var view = this;
+		    
 		    this.$el.draggable({
-                        start: function(e, ui) {
-                            // To prevent input field from opening due to mousedown:
-                            app.dragging = true;
-                            
-                            // To prevent mark from going into edit mode
-                            // once the drag ends / mouse is lifted:
-                            $(this).addClass('dragged');
-                            
-                            if ($(this).hasClass('ui-selected')) {
-                                
-                                // If dragging selected mark, save initial location
-                                // of all selected marks as basis for relative position
-                                // adjustments during dragging:
-                                $('.ui-selected').each(function() {
-                                    var pos = $(this).offset();
-                                    $(this).data({
-                                        'x': pos.left - ui.position.left,
-                                        'y': pos.top  - ui.position.top
-                                    });
-                                });
-                                
-                            } else {
-                                // If dragging unselected mark, clear selected:
-                                app.dispatcher.trigger('clearSelected');
-                            }
-                        },
-                        drag: function(e, ui) {
-                            if ($(this).hasClass('ui-selected')) {
-                                // Move all selected marks relative to their initial position:
-                                $('.ui-selected').each(function() {
-                                    $(this).css({
-                                        left: $(this).data('x') + ui.position.left,
-                                        top:  $(this).data('y') + ui.position.top
-                                    });
-                                });
-                            }
-                        },
-                        stop: function() {
-                            // Assuming here that `drop` event always hits before `drag: stop`.
-                            if(app.cancelDrag === true) app.cancelDrag === false;
-                            else                        updateModels($(this), view.updateLocation);
-                        }
+		        
+                start: function(e, ui) {
+                    
+                    // To prevent input field from opening due to mousedown:
+                    app.dragging = true;
+                    
+                    // To prevent mark from going into edit mode
+                    // once the drag ends / mouse is lifted:
+                    $(this).addClass('dragged');
+                    
+                    if ($(this).hasClass('ui-selected')) {
+                        
+                        view.setInitialDragPositions(ui);
+                        
+                    } else {  // If dragging unselected mark:
+                        
+                        app.dispatcher.trigger('clear:selected');
+                        
+                    }
+                    
+                },
+                
+                drag: function(e, ui) {
+                    
+                    if ($(this).hasClass('ui-selected')) view.updateDragPositions(ui);
+                    
+                },
+                
+                stop: function() {
+                    
+                    if(app.cancelDrag === true) {
+                        app.cancelDrag === false;
+                    } else {
+                        updateModels($(this), view.updateLocation);
+                    }
+                    
+                }
+                
 			});
 		},
+		
+		doNothing: function(e) { e.stopPropagation(); },
 		
 	});
 
