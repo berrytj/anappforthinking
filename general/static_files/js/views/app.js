@@ -5,12 +5,17 @@
 
 var app = app || {};
 
+var PASTE_Y_FACTOR = 0.33;
+
 var ENTER_KEY = 13;
 var UP_KEY = 38;
 var DOWN_KEY = 40;
 var Z_KEY = 90;
+var X_KEY = 88;
+var C_KEY = 67;
+var V_KEY = 86;
 
-var WALL_URL = API_NAME + '/wall/' + wall_id + '/';
+var WALL_URL = API_NAME + "/wall/" + wall_id + "/";
 
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
@@ -20,11 +25,12 @@ var INPUT_OFFSET_X = 7;
 var INPUT_OFFSET_Y = 4;
 var SPACING = 6;
 
+var WAIT_FOR_PASTE = 100;
 var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
-var TIME = 100;  // Go slower if you can make font size animation less choppy.
-var ANIM_OPTS = { duration: TIME, queue: true };  // Animation options.
+var TIME = 150;  // Go slower if you can make font size animation less choppy.
+var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 var EXTRA = 1.2;
                                                              // Get items for this wall only.  Don't 
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity returned (default is 20).
@@ -40,9 +46,9 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
         
 		// Delegated events. Switch from mousedown to click for showing input?
 		events: {
-		    'mousedown'               : 'waitThenToggle',
-			'mousedown #input'        : 'doNothing',
-			'mousedown #trash-can'    : 'doNothing',
+		    'click'               : 'waitThenToggle',
+			'click #input'        : 'doNothing',
+			'click #trash-can'    : 'doNothing',
 			'keypress #input'         : 'createMark',
             'keypress #waypoint-input': 'createWaypoint',
 			'keydown'                 : 'checkForZoom',
@@ -85,14 +91,17 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		populate: function() {
 		    
-		    var callback = function(coll) {
-		        if (!coll.length) app.dispatcher.trigger('redos:empty');
-			};
-		    
 		    app.Marks.fetch(FETCH_OPTS);
 			app.Waypoints.fetch(FETCH_OPTS);
-			app.Undos.fetch(FETCH_OPTS);
-			app.Redos.fetch( _.extend(FETCH_OPTS, { success: callback }) );
+			
+			var callback = function(coll) {
+		        if (!coll.length) app.dispatcher.trigger('stack:empty', coll.name);
+			};
+			
+			var options = _.extend(FETCH_OPTS, { success: callback });
+			
+			app.Undos.fetch(options);
+			app.Redos.fetch(options);
 		    
 		},
 		
@@ -102,19 +111,18 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			this.listenToCollection(app.Waypoints);
 			
 			this.listenToUndoKeys();
+			this.listenForCopyPaste();
 		    
 		    var d = app.dispatcher = _.extend({}, Backbone.Events);  // Use extend to clone other objects?
 		    
-		    d.on('zoom', this.zoom, this);
-			d.on('undo', this.undo, this);
-			d.on('list', this.list, this);
-			d.on('clear:redos', this.clearRedos, this);
+		    d.on('zoom',           this.zoom,          this);
+			d.on('undo',           this.undo,          this);
+			d.on('list',           this.list,          this);
+			d.on('paste',          this.pasteFromColl, this);
+			d.on('clear:redos',    this.clearRedos,    this);
 			d.on('clear:selected', this.clearSelected, this);
-			d.on('undoMarker', this.undoMarker, this);
-			// Refine this: only check for marks being edited if inputs aren't open.
-			// Don't check inputs again when this is called from within toggleInput.
-			d.on('click:wall', this.hideInputs, this);
-		    
+			d.on('undoMarker',     this.undoMarker,    this);
+			d.on('click:wall',     this.hideInputs,    this);
 		},
 		
 		listenToCollection: function(coll) {
@@ -128,10 +136,10 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			
 			if (model.get('text')) {
 			    
-			    var constructor = (model.type === 'mark') ? app.MarkView : app.WaypointView;
-			    var view = new constructor({ model: model });			    
-			    $('#wall').append(view.el);                   // Render after appending so
-			    view.render();                                // `shrinkwrap` works appropriately.
+			    var Constructor = (model.type === 'mark') ? app.MarkView : app.WaypointView;
+			    var view = new Constructor({ model: model });
+			    view.render();
+			    return view;
 			    
 			}
 		},
@@ -142,14 +150,26 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		listenToUndoKeys: function() {
 		    
-		    var view = this;
-		    
 		    $(document).keydown(function(e) {
 		        
-		        if (e.which === Z_KEY && e.metaKey && e.shiftKey) {
-			        view.undo('redo');
-		        } else if (e.which === Z_KEY && e.metaKey) {
-			        view.undo();
+		        if (e.which === Z_KEY && e.metaKey) {
+		            var ev = e.shiftKey ? 'try:redo' : 'try:undo';
+		            app.dispatcher.trigger(ev);
+		        }
+			    
+	        });
+	        
+		},
+		
+		listenForCopyPaste: function() {
+		    
+		    var view = this;
+		    $(document).keydown(function(e) {
+		        
+		        if (e.metaKey) {
+		            if      (e.which === X_KEY) view.cut();
+		            else if (e.which === C_KEY) view.copy();
+		            else if (e.which === V_KEY) view.paste(e);
 			    }
 			    
 	        });
@@ -181,27 +201,27 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		},
 		
 		waitThenToggle: function(e) {
-		                               // Noted so you can disable selector if
-		    app.mousedown = true;      // input appears while mouse is still down.
+		                              // Noted so that you can disable selector if
+//		    app.mousedown = true;     // input appears while mouse is still down.
 		    
 		    var view = this;
 		    // Showing the input and dragging both stem from the mousedown event;
 		    // here we're waiting to see if the user drags before showing the input.
 		    // May be removed if we decide to use the click event instead of mousedown.
-		    setTimeout(function() {
+//		    setTimeout(function() {
 		        if (!app.dragging) view.toggleInput(e);
-		    }, WAIT_FOR_DRAG);
+//		    }, WAIT_FOR_DRAG);
 		},
 		
 		toggleInput: function(e) {
 		    
 		    var open = this.hideInputs(e);
 		    
-		    if (!open) {  // Is either input open?
+		    if (!open) {  // If neither input is open:
 		        
-		        if ($('.input:visible').length) {  // Any marks being edited?
+		        if ($('.input:visible').length) {  // If any mark is being edited:
 		            app.dispatcher.trigger('click:wall', e);  
-		        } else if ($('.ui-selected').length) {  // Any marks selected?
+		        } else if ($('.ui-selected').length) {  // If any marks are selected:
 		            app.dispatcher.trigger('clear:selected');
 		        } else {
 		            this.showInput(e);
@@ -236,6 +256,203 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    $input.focus();
 		},
 		
+		cut: function() {
+		    
+            this.undoMarker('group_end');
+		    this.copy('cut');
+		    this.undoMarker('group_start');
+		    
+		},
+		
+		copy: function(cut) {
+		    
+		    var $selected = this.$('.ui-selected');
+		    
+		    if ($selected.length) {
+		        
+		        app.Clipboard.reset();
+		        
+		        var that = this;
+		        $selected.each(function() {
+		            that.copyObject($(this).data('view'), cut);
+		        });
+		        
+		    }
+		    
+		},
+		
+		copyObject: function(view, cut) {
+		    
+		    var clone = this.clone(view.model);
+		    
+		    if (cut) view.clear();
+		    
+		    clone.set({
+		        x: clone.get('x') - $(document).scrollLeft(),
+		        y: clone.get('y') - $(document).scrollTop()
+		    });
+		    
+		    app.Clipboard.add(clone);
+		},
+		
+		paste: function() {
+		    
+		    // If input field is open, copy/paste normally.
+		    if ($('.input:visible').length) return;
+		    
+		    this.catchPaste();
+		    
+		    var that = this;
+		    setTimeout(function() {
+		        
+//		        this.undoMarker('group_end');
+		        var noText = that.convertTextToMarks();
+		        if (noText) that.pasteFromColl();
+		        
+		    }, WAIT_FOR_PASTE);
+		    
+		},
+		
+		catchPaste: function() {
+		    
+		    this.input.css('opacity', 0)
+		              .show()
+		              .offset({ left: $(document).scrollLeft(),
+		                        top:  $(document).scrollTop()  })
+		              .focus();
+		    
+		},
+		
+		convertTextToMarks: function() {
+		    
+		    var text = this.input.val();
+		    
+		    if (!text) return true;
+		    
+		    this.input.css('opacity', 1).val('').hide();
+		    
+		    var saving = $.Deferred();
+		    
+		    var marks = this.pasteFromText(text, saving);
+		    this.evenlySpace(marks);
+		    this.saveAfterPasting(marks, saving);
+		    
+		},
+		
+		saveAfterPasting: function(marks, saving) {
+		    
+		    var animating = this.getPromise(marks);
+		    
+		    $.when(animating, saving).done(function() {
+		        
+		        _.each(marks, function($mark) {
+		            $mark.data('view').saveLocation();
+		        });
+		        
+		    });
+		    
+		},
+		
+		getPromise: function(marks) {
+		    
+		    var $marks = $();
+		    
+		    for (var i = 0; i < marks.length; i++) {
+		        $marks = $marks.add(marks[i]);
+		    }
+		    
+		    return $marks.promise();
+		},
+		
+		pasteFromText: function(text, saving) {
+		    
+		    var lines = text.split('\n');
+		    var last = lines.length - 1;
+		    var saving_last = null;
+		    var view;
+		    var that = this;
+		    var x = $(document).scrollLeft() + ($(window).width() - ORIG_INPUT_WIDTH) / 2;
+		    var y = $(document).scrollTop() + $(window).height() * PASTE_Y_FACTOR;
+		    var marks = [];
+		    
+		    _.each(lines, function(line, i) {
+		        
+		        if (i === last) saving_last = saving;
+		        view = that.pasteLineFromText(line, i, x, y, saving_last);
+		        marks.push(view.$el);
+		        
+		    });
+		    
+		    return marks;
+		    
+		},
+		
+		pasteLineFromText: function(line, i, x, y, waiting) {
+		    
+		    var attrs = {
+			    wall: WALL_URL,
+			    text: line,
+			    x: x,
+			    y: y,
+			};
+		    
+		    var model = app.Marks.create(attrs, {
+		                    success: function(model) {
+		                                if (waiting) waiting.resolve();
+//		                                that.createEmptyUndo(model);
+//		                                placeMarker('group_start');
+		                             },
+		                    silent: true,
+		    });
+		    
+		    return this.createViewForModel(model);
+		    
+		},
+		
+		pasteFromColl: function() {
+		    
+		    var placeMarker = _.after(app.Clipboard.length, this.undoMarker);
+		    
+		    var that = this;
+		    app.Clipboard.each(function(model) {
+		        that.pasteMarkFromColl(model, placeMarker);
+		    });
+		    
+		},
+		
+		pasteMarkFromColl: function(model, placeMarker) {
+		    
+		    var clone = this.clone(model);
+		    
+		    // Waypoints don't paste in right place, fix
+		    clone.set({
+		        x: clone.get('x') + $(document).scrollLeft(),
+		        y: clone.get('y') + $(document).scrollTop()
+		    });
+		    
+		    var that = this;
+		    this.getColl(clone.type).create(clone, {
+		        success: function(model) {
+		                    that.createEmptyUndo(model);
+		                    placeMarker('group_start');
+		                 }
+		    });
+		    
+		},
+		
+		// Clones a model without replicating the id.
+		clone: function(model) {
+		    
+		    var attrs = _.clone(model.attributes);
+		    attrs.id = null;
+		    
+		    var Const = model.constructor;
+		    var clone = new Const(attrs);
+		    
+		    return clone;
+		    
+		},
+		
 	  //////////////////////////////////
 	  // ***** CREATING OBJECTS ***** //
 	  //////////////////////////////////
@@ -258,27 +475,29 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		        
 			    var text = $input.val().trim();
 			    if (text) this.createModel($input, text);
-			    $input.hide();
+			    $input.val('').hide();
 			    
 			}
 		},
 		
-		createModel: function($input, text) {
+		getModelAttributes: function(text, pos) {
 		    
-		    var loc = $input.offset();
-		    
-			var attributes = {
+			return {
 			    wall: WALL_URL,
 			    text: text,
-			    x:    loc.left / app.factor,
-			    y:    loc.top  / app.factor
+			    x:    pos.left / app.factor,
+			    y:    pos.top  / app.factor
 			};
-			
+		    
+		},
+		
+		createModel: function($input, text) {
+		    
 			var coll = ($input == this.input) ? app.Marks : app.Waypoints;
+			var attributes = this.getModelAttributes( text, $input.offset() );
 			
 			coll.create(attributes, { success: this.createEmptyUndo });
 			
-			$input.val('');
 		},
 		
 		createEmptyUndo: function(model) {
@@ -288,7 +507,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			    wall:   WALL_URL,
                 type:   model.type,
 			    obj_pk: model.get('id'),
-			    text:   '',
+			    text:   "",
 			    x:      0,
 			    y:      0
 			    
@@ -302,11 +521,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
             app.Undos.create({
                 
                 wall: WALL_URL,
-                type: type      // 'group_end' or 'group_start'
+                type: type     // 'group_end' or 'group_start'
                 
             }, {
                 success: function() {
-                            if (type === 'group_start') app.dispatcher.trigger('saved');
+                            var status = (type === 'group_end') ? 'saving' : 'saved';
+                            app.dispatcher.trigger(status);
                          }
             });
         },
@@ -336,35 +556,35 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		    var $marks = this.$('.ui-selected').not('.waypoint');
 		    
-		    if($marks.length) {
+		    if ($marks.length) {
 		        
 		        this.leftAlignMarks($marks);
-		        this.evenlySpace($marks);
+		        var ordered_marks = this.sortMarksByTop($marks);
+		        this.evenlySpace(ordered_marks);
 		        
-		        var $sample_item = $marks.first();
+		        var $obj = $marks.first();
 		        
-		        // `.promise()` waits for all animations to finish:
+		        // `.promise()` waits for all animations to finish.
 		        $marks.promise().done(function() {
-		            
-		            updateModels( $sample_item,
-		                          $sample_item.data('view').updateLocation,
-		                          $marks );
+		            updateModels($obj, $obj.data('view').updateLocation, $marks);
 		        });
 		        
 		    }
 		},
 		
-		sortMarksByTop: function(marks) {
+		sortMarksByTop: function($marks) {
+		    
+		    var marks = $marks.get();
 		    
 		    // Using insertion sort because array should be mostly sorted:
 		    // marks higher on the screen are likely to have been created earlier.
 		    for (var i = 1; i < marks.length; i++) {
 		        var j = i;
-		        while(j > 0) {  // Loop through all previous items in the array:
+		        while (j > 0) {  // Loop through all previous items in the array:
 		            var current = marks[j];
 		            var prev    = marks[j-1];
 		            var y = $(current).offset().top;
-		            if(y < $(prev).offset().top) {
+		            if (y < $(prev).offset().top) {
 		                // If current item is has lower y-offset
 		                // than previous item, switch them:
 		                var temp   = current;
@@ -377,15 +597,16 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		        }
 		    }
 		    
-		    return marks;
+		    for (var k = 0; k < marks.length; k++) {
+		        marks[k] = $(marks[k]);
+		    }
 		    
+		    return marks;
 		},
 		
-		evenlySpace: function($marks) {
+		evenlySpace: function(marks) {
 		    
-		    var marks = this.sortMarksByTop( $marks.get() );
-		    
-		    var $prev = $(marks[0]);
+		    var $prev = marks[0];
 		    var new_y = $prev.offset().top;
 		    var $mark;
 		    
@@ -393,7 +614,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		        // Add previous object y-value, previous object height,
 		        // and spacing to get next object y-value.
 		        new_y += $prev.outerHeight() + SPACING * app.factor;
-                $mark = $(marks[i]);
+                $mark = marks[i];
 		        
 		        $mark.animate({
 		            top: new_y
@@ -451,11 +672,14 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		            this.performUndo(undo, Undos, Redos);
 		        }
 		        
+		    } else {
+		        app.dispatcher.trigger('saved');
 		    }
 		    
 		},
 		
 		currentState: function(obj) {
+		    
 		    return {
 		        wall:   WALL_URL,
                 type:   obj.type,
@@ -463,37 +687,30 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			    text:   obj.get('text'),
 			    x:      obj.get('x'),
 			    y:      obj.get('y')
-			};		    
+			};
+			
 		},
 		
 		formerState: function(undo) {
+		    
 		    return {
 		        text: undo.get('text'),
 		        x:    undo.get('x'),
 		        y:    undo.get('y')
 		    };
-		},
-		
-		getUndoColl: function(type) {
-		    
-		    if (type === 'mark') {
-		        return app.Marks;
-		    } else if (type === 'waypoint') {
-		        return app.Waypoints;
-		    }
 		    
 		},
 		
 		performUndo: function(undo, Undos, Redos, group) {
 		        
-		        var coll = this.getUndoColl( undo.get('type') );
+		        var coll = this.getColl( undo.get('type') );
 		        var obj  = coll.get( undo.get('obj_pk') );
                 
                 Redos.create( this.currentState(obj) );
                 obj.save( this.formerState(undo) );
                 undo.destroy({
                     success: function() {
-                                if (!group) app.dispatcher.trigger('saved:undo');
+                                if (!group) app.dispatcher.trigger('saved');
                              }
                 });
                 
@@ -512,7 +729,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		            type: 'group_start'
 		        }, {
 		            success: function() {
-		                app.dispatcher.trigger('saved:undo');
+		                app.dispatcher.trigger('saved');
 		            }
 		        });
 		        
@@ -613,15 +830,18 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 	  // ***** MISCELLANEOUS ***** //
 	  ///////////////////////////////
 		
+		getColl: function(type) {
+		    
+		    if (type === 'mark') {
+		        return app.Marks;
+		    } else if (type === 'waypoint') {
+		        return app.Waypoints;
+		    }
+		    
+		},
+		
 		clearRedos: function() {
-		    
-		    var coll  = app.Redos;
-		    var model = coll.pop();
-		    
-            while (model) {
-                model.destroy();
-                model = coll.pop();
-            }
+		    app.Redos.reset();
 		},
 		
 		resetDragging: function() {
@@ -634,7 +854,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		doNothing: function(e) { e.stopPropagation(); },
 		
-				calculateTime: function(start, type) {
+		calculateTime: function(start, type) {
 		    
 		    var end = new Date();
 		    var time = end - start;

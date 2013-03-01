@@ -16,44 +16,56 @@ var WP_FONT_SIZE = 16;
 		// Cache the template function for a single waypoint.
 		template: _.template( $('#waypoint-template').html() ),
 		
-		events: _.extend({
-		    'click': 'toggleSelected',
-		    }, app.ObjectView.prototype.events),
+		events: _.extend({ 'click': 'toggleSelected' }, app.ObjectView.prototype.events),
 		
 		initialize: function() {
-		    // Call super:
-		    app.ObjectView.prototype.initialize.call(this);
-		    this.tag = this.createTag(this.model.get('id'), this.model.get('text'));
+		    
+		    app.ObjectView.prototype.initialize.call(this);  // Call super.
+		    
+		    this.tag = this.createTag(this.model.get('text'));
+		    
 		},
 		
 		render: function() {
-		    // Call super:
-		    app.ObjectView.prototype.render.call(this);
 		    
-		    if(this.model.get('text') === '') {
+		    app.ObjectView.prototype.render.call(this);  // Call super.
+		    
+		    if (this.model.get('text') === '') {
+		        
 		        this.$el.removeClass('waypoint');
 		        this.tag.$el.hide();
+		        
 		    } else {
+		        
 		        this.$el.addClass('waypoint');
-		        if(this.tag.$el.is(':hidden')) this.tag.$el.show();
+		        this.tag.$el.show();
+		        
 		    }
+		    
 		},
 		
-		createTag: function(id, text) {
-		        var view = new app.TagView({ waypoint_id: id, text: text });
-		        // Too coupled to WaypointTagsView? But waypoint + tag need
-		        // to know about each other.  Maybe WaypointTagsView is unnecessary.
+		createTag: function(text) {
+		        
+		        var view = new app.TagView({
+		            waypoint: this,
+		            text: text
+		        });
+		        
 			    $('#waypoint-tags').prepend(view.el);
 			    view.render();
-			    if(!text) view.$el.hide();
+			    if (!text) view.$el.hide();
+			    
 			    return view;
+			    
 		},
 		
-		zoomSize: function() {},
+		zoomSize: function() {},  // Don't change waypoint size when zooming. May change.
 		
 		toggleSelected: function(e) {
 		    
-		    if (e.shiftKey || e.metaKey || e.ctrlKey) this.$el.toggleClass('ui-selected');
+		    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+		        this.$el.toggleClass('ui-selected');
+		    }
 		    
 		},
 		

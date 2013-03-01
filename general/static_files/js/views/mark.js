@@ -37,110 +37,125 @@ var BOTTOM_INDEX = 10;
 		
 		zoomSize: function() {
 		    
-		    this.$('.labelBlock').css('width', app.factor * ORIG_MAX_WIDTH);
-		    
-		    var labelCSS = {};
+		    var style = {};
 		    
 		    if(app.factor < 1) {
-		        labelCSS['font-family'] = 'HelveticaNeue';
+		        style['font-family'] = 'HelveticaNeue';
 		    } else {
-		        labelCSS['font-family'] = 'HelveticaNeue-Light';
+		        style['font-family'] = 'HelveticaNeue-Light';
 		    }
 		    
-		    labelCSS['font-size'] = app.factor * PRIMARY_FONT_SIZE + 'px';
-		    this.$('label').css(labelCSS);
+		    style['font-size'] = app.factor * PRIMARY_FONT_SIZE + 'px';
+		    
+		    this.$('label').css(style);
+		    this.$('.labelBlock').css('width', app.factor * ORIG_MAX_WIDTH);
 		    
 		    this.shrinkwrap();
 		},
 		
 		shrinkwrap: function() {
-			var labelWidth = this.$('label').width();
-			this.$('.labelBlock').width(labelWidth + LABEL_PADDING);
-			this.$el.width(labelWidth + this.$('.destroy').width() + app.factor * MARK_PADDING);
+		    
+			var label_width = this.$('label').width();
+			
+			this.$('.labelBlock').width(label_width + LABEL_PADDING);
+			this.$el.width(label_width + app.factor * MARK_PADDING);
+			
 		},
-
-		// Switch this view into 'editing'
-		// mode, displaying the input field:
+        
 		edit: function(e) {
 		    
 		    var $mark = this.$el;
 		    
-		    if($mark.hasClass('dragged')) {
-		        // Don't edit if the mouseup comes
-		        // at the end of a drag operation:
-		        $mark.removeClass('dragged');
+		    if ($mark.hasClass('dragged')) {
+		                                       // Don't edit if the mouseup comes
+		        $mark.removeClass('dragged');  // at the end of a drag operation.
 		        
 		    } else if (e.shiftKey || e.metaKey || e.ctrlKey) {
 		        
-		        $mark.toggleClass('ui-selected');
+		        this.toggleSelected($mark);
 		        
-		        // At least two marks must be selected for 'list' function to work:
-		        var selected_count = $('.ui-selected').not('.waypoint').length;
+		    } else {
 		        
-		        if (selected_count >= 2) app.dispatcher.trigger('enableList', true);
-		        else                     app.dispatcher.trigger('enableList', false);
+		        this.editMode($mark);
 		        
-		    } else {  // Actually edit the mark:
-		        
-		        app.dispatcher.trigger('clear:selected');
-		        
-		        var height = $mark.height();
-		        var width;
-		        
-		        // Show input at full width even if mark is just a few words:
-		        if (height < SINGLE_ROW_HEIGHT) width = ORIG_INPUT_WIDTH;
-		        else                            width = this.$('.labelBlock').width();
-		        
-		        // Make sure input shows above other marks:
-		        this.$el.css('z-index', TOP_INDEX);
-		        
-		        this.$('.input').css({ 'font-size': app.factor * PRIMARY_FONT_SIZE })
-		                        .width(width)
-		                        .height(height)
-		                        .show()
-		                        .focus()
-		                        .val(this.model.get('text'))
-		                        .autosize();  // Call on all inputs at the beginning?
 		    }
 		},
 		
-		// Close the 'editing' mode, saving changes to the mark.
+		inputWidth: function(height) {
+		    
+		    if (height < SINGLE_ROW_HEIGHT) {
+		        return ORIG_INPUT_WIDTH;  // If mark is very short, still make input full width.
+		    } else {
+		        return this.$('.labelBlock').width();
+		    }
+		    
+		},
+		
+		editMode: function($mark) {
+		    
+		    app.dispatcher.trigger('clear:selected');
+		    
+		    var height = $mark.height();
+		    var width  = this.inputWidth(height);
+		    
+		    $mark.css('z-index', TOP_INDEX);  // Make sure input isn't under any marks.
+		    
+		    this.$('.input').css({ 'font-size': app.factor * PRIMARY_FONT_SIZE })
+		                    .width(width)
+		                    .height(height)
+		                    .show()
+		                    .focus()
+		                    .val(this.model.get('text'))
+		                    .autosize();  // Call on all inputs at the beginning?
+		},
+		
+		// Close the `editing` mode, saving changes to the mark.
 		finishEditing: function(e) {
 		        
-		        // Why is this getting called so much?
-		        //console.log('finish editing');
-		        
-		        var clicking = e.pageX;
-		        var enter = (e.which == ENTER_KEY);
-		        
-		        if (clicking || enter) {  // Don't finish editing based on non-enter keypresses, of course.
+		        if (e.pageX || e.which === ENTER_KEY) {  // If clicking or pressing enter:
 		        
 		            var $input = this.$('.input');
 		            
-		            if ($input.is(':visible')) {
-		                
-		                // Mark was raised for editing;
-		                // move back to normal position:
-		                this.$el.css('z-index', BOTTOM_INDEX);
+		            if ( $input.is(':visible') ) {
+		                                                        // Mark was raised for editing.
+		                this.$el.css('z-index', BOTTOM_INDEX);  // Move back to normal position.
 		                
 			            var text = $input.val().trim();
 			            
-			            if(text) {
-			                
-			                if (this.model.get('text') !== text) {  // If text actually changed:
-			                    
-			                    this.createUndo(this.model.get('text'));
-			                    this.model.save({ text: text });
-			                    
-			                }
-			                
+			            if (text) {
+			                this.saveEdit(text);
 			                $input.hide();
-			                
 			            } else {
-			                this.clear();  // Clear mark if saved with no text.
+			                this.clear();  // Clear mark if closed with no text.
 			            }
+			            
 			        }
 			    }
+		},
+		
+		saveEdit: function(text) {
+		    
+		    var current_text = this.model.get('text');
+		    
+		    if (current_text !== text) {  // If text has changed:
+		        
+			    this.createUndo(current_text);
+			    this.model.save({ text: text });
+			    
+			}
+		    
+		},
+		
+		toggleSelected: function($mark) {
+		    
+		    $mark.toggleClass('ui-selected');
+		    
+		    if ( $('.ui-selected').not('.waypoint').length >= 2 ) { // At least two marks must be
+		        app.dispatcher.trigger('enable:list', true);        // selected for 'list' function to work.
+		    } else {
+		        app.dispatcher.trigger('enable:list', false);  // i.e. disable list
+		    }
+		    
 		},
 		
 	});

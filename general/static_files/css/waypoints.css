@@ -33,10 +33,13 @@
 
 #waypoint-tags {
 	position:fixed;
-	margin:92% 0 0 2%;
-	width:96%;
+	left:20px;
+	bottom:7px;
+	width:90%;
 	height:35px;
-	z-index:20000;
+	z-index:10000;
+	
+/*	background-color:red;*/
 }
 
 #hide-tags {
@@ -63,6 +66,8 @@
 	border-radius:4px;
 	text-shadow:1px 1px 0px rgba(255,255,255,0.4);
 	box-shadow:3px 3px 3px rgba(0,0,0,0.4);
+	
+	z-index:10000;
 	
 	background: rgb(255,234,165); /* Old browsers */
     background: -moz-linear-gradient(top,  rgba(255,234,165,1) 0%, rgba(234,195,105,1) 100%); /* FF3.6+ */

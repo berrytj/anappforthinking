@@ -2,8 +2,7 @@
 // --------------------------
 
 var app = app || {};
-var WAYPOINT_TIME = 1000;
-var WP_FROM_TOP = 0.35;
+var WP_SCROLL_TIME = 1000;
 
 (function() {
     
@@ -20,8 +19,10 @@ var WP_FROM_TOP = 0.35;
 		},
 		
 		initialize: function(options) {
-		    this.waypoint_id = options.waypoint_id;
+		    
+            this.waypoint = options.waypoint;
 		    this.text = options.text;
+		    
 		},
 		
 		render: function() {
@@ -30,10 +31,19 @@ var WP_FROM_TOP = 0.35;
 		},
 		
 		moveToWaypoint: function() {
-		    var wp = app.Waypoints.get(this.waypoint_id);
-	        var left = wp.get('x')*app.factor - $(window).width()/2 + WP_WIDTH/2;
-	        var top  = wp.get('y')*app.factor - $(window).height() * WP_FROM_TOP;
-	        $("html, body").animate({ scrollLeft:left, scrollTop:top }, WAYPOINT_TIME);
+            
+            var wp = this.waypoint;
+	        
+	        var left = wp.model.get('x') * app.factor - $(window).width() / 2 + WP_WIDTH / 2;
+	        var top  = wp.model.get('y') * app.factor - $(window).height() * WP_Y_FACTOR;
+	        
+	        $('html, body').animate({
+	            
+	            scrollLeft: left,
+	            scrollTop:  top
+	            
+	        }, WP_SCROLL_TIME);
+	        
 		},
 				
 	});

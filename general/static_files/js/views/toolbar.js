@@ -13,12 +13,13 @@ var app = app || {};
 	    
 		// The DOM events specific to an item.
 		events: {
-		             'mousedown': 'doNothing',
-		        'click #zoom-in': 'zoomIn',
-		       'click #zoom-out': 'zoomOut',
-		    'click #undo-button': 'undo',
-		    'click #redo-button': 'redo',
-		    'click #list-button': 'list',
+		    'mousedown':           'doNothing',
+		    'click #zoom-in':      'zoomIn',
+		    'click #zoom-out':     'zoomOut',
+		    'click #undo-button':  'undo',
+		    'click #redo-button':  'redo',
+		    'click #list-button':  'list',
+		    'click #paste-button': 'paste',
 		},
 		
 		initialize: function() {
@@ -28,21 +29,27 @@ var app = app || {};
 		    
 		    var d = app.dispatcher;
 		    
-		    d.on('saved:undo',    this.doneSavingUndo,   this);
-		    d.on('saving',        this.saving,           this);
-		    d.on('saved',         this.doneSaving,       this);
-		    d.on('enable:list',    this.enableList,       this);
-		    d.on('clear:selected', this.disableList,      this);
-		    d.on('clear:redos',    this.fadeRedoButton,   this);
-		    d.on('redos:empty',    this.fadeRedoButton,   this);
-		    d.on('redos:exist',    this.unfadeRedoButton, this);
+		    d.on('try:undo',       this.undo,           this);
+		    d.on('try:redo',       this.redo,           this);
+		    d.on('saving',         this.saving,         this);
+		    d.on('saved',          this.doneSaving,     this);
+		    d.on('enable:list',    this.enableList,     this);
+		    d.on('clear:selected', this.disableList,    this);
+		    d.on('clear:redos',    this.fadeRedo,       this);
+		    d.on('stack:empty',    this.fade,           this);
 		},
 		
-		unfadeRedoButton: function() {
-		    this.$('#redo-button').removeClass('button-disabled');
+		fade: function(name) {
+		    
+		    if (name === 'undo') {
+		        this.$('#undo-button').addClass('button-disabled');
+		    } else if (name === 'redo') {
+		        this.$('#redo-button').addClass('button-disabled')
+		    }
+		    
 		},
 		
-		fadeRedoButton: function() {
+		fadeRedo: function() {
 		    this.$('#redo-button').addClass('button-disabled');
 		},
 		
@@ -53,45 +60,55 @@ var app = app || {};
 		    if (this.listEnabled) app.dispatcher.trigger('list');
 		},
 		
+		paste: function() {
+		    app.dispatcher.trigger('paste');
+		},
+		
 		// Boolean refers to whether the action 'isRedo' or not:
 		undo: function() {
 		    
-		    if(this.undoEnabled) {
-		        this.savingUndo();
+		    if (this.undoEnabled) {
+		        this.saving();
 		        app.dispatcher.trigger('undo', false);
 		    }
+		    
 		},
 		
 		redo: function() {
 		    
-		    if(this.undoEnabled) {
-		        this.savingUndo();
+		    if (this.undoEnabled) {
+		        this.saving();
 		        app.dispatcher.trigger('undo', true);
 		    }
+		    
 		},
 		
 		saving: function() {
+		    
+		    this.undoEnabled = false;
 		    this.$('#saving').text('saving...');
+		    this.$('#undo-button').addClass('button-disabled');
+		    this.$('#redo-button').addClass('button-disabled');
+		    
 		},
 		
 		doneSaving: function() {
-		    this.$('#saving').text('saved');
-		},
-		
-		savingUndo: function() {
 		    
-		    this.undoEnabled = false;
-		    this.saving();
-		    this.$('#undo-button').addClass('button-disabled');
-		    this.$('#redo-button').addClass('button-disabled');
-		},
-		
-		doneSavingUndo: function() {
+		    var view = this;
 		    
-		    this.undoEnabled = true;
-		    this.doneSaving();
-		    if (app.Undos.length) this.$('#undo-button').removeClass('button-disabled');
-		    if (app.Redos.length) this.$('#redo-button').removeClass('button-disabled');
+		    setTimeout(function() {
+		        
+		        if (app.queue.state() === 'resolved') {
+		            
+		            view.undoEnabled = true;
+		            view.$('#saving').text('saved');
+		            if (app.Undos.length) view.$('#undo-button').removeClass('button-disabled');
+		            if (app.Redos.length) view.$('#redo-button').removeClass('button-disabled');
+		            
+		        }
+		        
+		    }, 1);  // Wait a millisecond for jqXHR to resolve.
+		    
 		},
 		
 		disableList: function() {
@@ -100,10 +117,14 @@ var app = app || {};
 		
 		enableList: function(enabled) {
 		    
-		    this.listEnabled = enabled;  // 'enabled' is a boolean.
+		    this.listEnabled = enabled;
 		    
-		    if(enabled) this.$('#list-button').removeClass('button-disabled');
-		    else        this.$('#list-button').addClass('button-disabled');
+		    if (enabled) {
+		        this.$('#list-button').removeClass('button-disabled');
+		    } else {
+		        this.$('#list-button').addClass('button-disabled');
+		    }
+		    
 		},
         	
 		doNothing: function(e) { e.stopPropagation(); },

@@ -1,9 +1,18 @@
 var app = app || {};
-var API_NAME = '/api/v1';
 
 (function() {
     
     'use strict';
+    
+    window.TastypieCollection = Backbone.Collection.extend({
+        
+        parse: function(response) {
+            this.recent_meta = response.meta || {};
+            return response.objects || response;
+        }
+        
+    });
+    
     
     // Mark Collection
     // ---------------
@@ -11,7 +20,8 @@ var API_NAME = '/api/v1';
 	var MarkSet = window.TastypieCollection.extend({
 	    
 		model: app.Mark,
-		url: API_NAME + '/mark',
+		url: API_NAME + "/mark",
+		
 	});
 	
 	// Create our global collection of **Marks**.
@@ -24,12 +34,12 @@ var API_NAME = '/api/v1';
 	var WaypointSet = window.TastypieCollection.extend({
 	    
 		model: app.Waypoint,
-		url: API_NAME + '/waypoint',
+		url: API_NAME + "/waypoint",
+		
 	});
 	
-	// Create our global collection of **Marks**.
+	// Create our global collection of **Waypoints**.
 	app.Waypoints = new WaypointSet();
-	
 	
 	
 	// Undo Collection
@@ -38,13 +48,14 @@ var API_NAME = '/api/v1';
 	var UndoSet = window.TastypieCollection.extend({
 	    
 		model: app.Undo,
-		url: API_NAME + '/undo',
+		url: API_NAME + "/undo",
+		name: "undo",
+		
 	});
 	
 	// Create our global collection of **Undos**.
 	app.Undos = new UndoSet();
 	app.Undos.comparator = 'id';
-	
 	
 	
 	// Redo Collection
@@ -53,11 +64,23 @@ var API_NAME = '/api/v1';
 	var RedoSet = window.TastypieCollection.extend({
 		
 		model: app.Redo,
-		url: API_NAME + '/redo',
+		url: API_NAME + "/redo",
+		name: "redo",
+		
 	});
 	
 	// Create our global collection of **Redos**.
 	app.Redos = new RedoSet();
 	app.Redos.comparator = 'id';
+	
+	
+	// Clipboard
+    // ---------
+    
+	var Clipboard = window.TastypieCollection.extend({});
+	
+	// Create our global `Clipboard`.
+	app.Clipboard = new Clipboard();
+	
 	
 }());

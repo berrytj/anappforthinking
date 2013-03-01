@@ -1,6 +1,6 @@
 body {
-    font: 14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
-    color: #3d3d3d;
+    font:14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+    color:#3d3d3d;
 }
 
 #wall {
@@ -26,6 +26,11 @@ body {
     line-height:140%;
 	
 	z-index:10000;
+}
+
+#input {
+    /* To avoid 1px jump after initial creation. */
+    padding-left:4px;
 }
 
 .mark {
@@ -91,10 +96,10 @@ button {
 
 .ui-selected, .ui-selecting {
     box-shadow:0px 0px 3px 1px orange;
-/*    rgba(229,210,167,1) rgba(183,144,33,1)*/
 }
 
 .ui-state-disabled {
+    /* We don't need to see when selectable has been disabled. */
     opacity:1;
 }
 

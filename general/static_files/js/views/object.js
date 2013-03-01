@@ -9,58 +9,64 @@ var app = app || {};
     
     // Object descendants include marks and waypoints.
 	app.ObjectView = Backbone.View.extend({
-
+        
 		// The DOM events specific to an item.
 		events: {
-		    'mousedown .input': 'doNothing',
-		    'mousedown': 'cleanup',
+		    'click .input': 'doNothing',
+		    'click'       : 'cleanup',
 		},
         
 		initialize: function() {
-			                                             // Update view when model changes, e.g. after
-			this.model.on('change', this.render, this);  // editing text, performing undo, or trashing.
 			
-			                                // Give the element a pointer to its view so you
-			this.$el.data('view', this);    // can access it, e.g. after dragging or dropping).
-			
+			this.model.on('change', this.render, this);  // Called after editing text, performing undo, trashing...
+			this.$el.data('view', this);                 // Accessed after dragging, dropping...
 			app.dispatcher.on('zoom:objects', this.zoom, this);
+			this.makeDraggableOnce = _.once(this.makeDraggable);
 		},
 		
 		render: function() {
 		    
 		    var onPage = this.$el.parents().length;
+		    var options = ANIM_OPTS;
 		    
 		    if (this.model.get('text')) {
 		        
-		        if (!onPage) this.putBackOnPage(this.$el);
+		        if (!onPage) {
+		            this.putBackOnPage(this.$el);
+		            options = { duration: 0 };  // Don't animate when first putting on page.
+		        }
 		        
-                this.$el.html(this.template(this.model.toJSON()))
-			            .animate({
-			                
-			                left: this.model.get('x') * app.factor,
-			                top:  this.model.get('y') * app.factor
-			                
-			             }, ANIM_OPTS);
-			    
+			    this.draw(options);
 			    this.zoomSize();
-			                           // Move this out of 'render' so it only gets called once?
-			    this.makeDraggable();  // Doesn't work in 'initialize' (too early): causes additional
-			                           // objects in a dragging group to jump. Use _.once?
-			} else if (onPage) {
-			                           // Detach element if it's on page without any
-			    this.$el.detach();     // text, e.g. after deleting or redo-deleting.
+			    this.makeDraggableOnce();
+			    
+			} else {
+			    if (onPage) this.$el.detach();
 			}
-                                       // Return view so you can chain this function,
-			return this;               // e.g. `append(view.render().el)`.
+			
+			return this;
+		},
+		
+		draw: function(options) {
+		    
+		    this.$el.html(this.template(this.model.toJSON()))
+			        .animate({
+			            
+			            left: this.model.get('x') * app.factor,
+			            top:  this.model.get('y') * app.factor
+			            
+			         }, options);
 		},
 		
 		putBackOnPage: function($el) {
 		    
 		    $el.appendTo('#wall')
 		       .removeClass('ui-draggable-dragging dragged dropped');
-		                                                                 // Destroy draggable after re-appending
-		    if ($el.hasClass('ui-draggable')) $el.draggable('destroy');  // or dragging won't work. (Object gets
-		},                                                               // made draggable again below.)
+		    
+		    if ($el.hasClass('ui-draggable')) $el.draggable('destroy');
+		    
+		    this.makeDraggableOnce = _.once(this.makeDraggable);
+		},
 		
 		zoom: function(rel_factor) {
             
@@ -79,7 +85,12 @@ var app = app || {};
 		updateLocation: function(solo) {
 		    
 		    this.createUndo();
+		    this.saveLocation(solo);
 		    
+		},
+		
+		saveLocation: function(solo) {
+//		    console.log(this.model);
 		    var loc = this.$el.offset();
 		    
 		    this.model.save({
@@ -88,9 +99,8 @@ var app = app || {};
 		        y: loc.top  / app.factor
 		        
 		    }, {
-		        // Element has already moved; pass silent to
-		        // avoid micro-movements due to re-rendering:
-		        silent: true,
+		                       // Element has already moved; pass silently to
+		        silent: true,  // avoid micro-movements due to re-rendering.
 		        success: function() {
 		                    if (solo) app.dispatcher.trigger('saved');
 		                 }
@@ -101,12 +111,8 @@ var app = app || {};
 		cleanup: function(e) {
 		    
 		    e.stopPropagation();
-		    
 		    app.dispatcher.trigger('click:wall', e);
-		    
-		    // Free the element to be edited
-		    // next time it gets clicked:
-		    this.$el.removeClass('dragged');
+		    this.$el.removeClass('dragged');  // Free the element to be edited next time it gets clicked.
 		},
 		
 		createUndo: function() {
@@ -131,14 +137,11 @@ var app = app || {};
 		    
 		    this.createUndo();
 		    
-		    this.model.save({
-		        text: ''
-		    }, {
+		    this.model.save({ text: "" }, {
 		        success: function() {
 		                    if (solo) app.dispatcher.trigger('saved');
 		                 }
 		    });
-		    
 		},
 		
 		setInitialDragPositions: function(ui) {
@@ -151,18 +154,16 @@ var app = app || {};
                 var pos = $(this).offset();
                 
                 $(this).data({
-                    'x': pos.left - ui.position.left,
-                    'y': pos.top  - ui.position.top
+                    "x": pos.left - ui.position.left,
+                    "y": pos.top  - ui.position.top
                 });
                 
             });
-		    
 		},
 		
 		updateDragPositions: function(ui) {
 		    
-		    // Move all selected marks relative to their initial position:
-            $('.ui-selected').each(function() {
+            $('.ui-selected').each(function() {  // Move all selected marks relative to their initial position.
                 
                 $(this).css({
                     left: $(this).data('x') + ui.position.left,
@@ -170,7 +171,6 @@ var app = app || {};
                 });
                 
             });
-		    
 		},
 		
 		makeDraggable: function() {
@@ -181,35 +181,24 @@ var app = app || {};
 		        
                 start: function(e, ui) {
                     
-                    // To prevent input field from opening due to mousedown:
-                    app.dragging = true;
-                    
-                    // To prevent mark from going into edit mode
-                    // once the drag ends / mouse is lifted:
-                    $(this).addClass('dragged');
+                    app.dragging = true;  // To prevent input field from opening due to mousedown.
+                    $(this).addClass('dragged');  // To prevent mark from going into edit mode once the drag ends / mouse is lifted.
                     
                     if ($(this).hasClass('ui-selected')) {
-                        
                         view.setInitialDragPositions(ui);
-                        
                     } else {  // If dragging unselected mark:
-                        
                         app.dispatcher.trigger('clear:selected');
-                        
                     }
-                    
                 },
                 
                 drag: function(e, ui) {
-                    
                     if ($(this).hasClass('ui-selected')) view.updateDragPositions(ui);
-                    
                 },
                 
                 stop: function() {
                     
-                    if(app.cancelDrag === true) {
-                        app.cancelDrag === false;
+                    if (app.cancelDrag === true) {
+                        app.cancelDrag = false;
                     } else {
                         updateModels($(this), view.updateLocation);
                     }
