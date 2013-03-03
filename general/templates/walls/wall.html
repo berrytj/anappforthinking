@@ -24,7 +24,7 @@
         <span class='menu-button bar'>|</span><span id='zoom-out'     class='menu-button'                >zoom out</span>
         <span class='menu-button bar'>|</span><span id='zoom-in'      class='menu-button'                >zoom in</span>
         <span class='menu-button bar'>|</span><span id='list-button'  class='menu-button button-disabled'>list</span>
-        <span class='menu-button bar'>|</span><span id='paste-button' class='menu-button                '>paste</span>
+        <span class='menu-button bar'>|</span><span id='paste-button' class='menu-button button-disabled'>paste</span>
         <span class='menu-button bar'>|</span>
       </span>
       
@@ -34,8 +34,7 @@
   
   <div id='wall'>
 	<textarea id='input' class='input' spellcheck='false'></textarea>
-	<textarea id='waypoint-input' maxlength='22'     name='waypoint'
-	          class='waypoint'    spellcheck='false' style='display:none;'></textarea>
+	<textarea id='wp-input' maxlength='22' class='waypoint' spellcheck='false' style='display:none;'></textarea>
   </div>
   
   <div id='trash-can' class='trash-can'></div>
@@ -47,13 +46,8 @@
   
   
   <script type='text/template' id='mark-template'>
-    
     <textarea class='input' spellcheck='false'></textarea>
-    
-	<div class='labelBlock'>	
-	  <label><%- text %></label>
-	</div>
-	
+    <label><%- text %></label>
   </script>
   
   

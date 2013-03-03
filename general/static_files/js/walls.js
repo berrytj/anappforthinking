@@ -21,7 +21,7 @@ $(function() {
     });
     
     $('#wall').selectable({
-        filter: '.mark, .waypoint:not(#waypoint-input)',
+        filter: '.mark, .waypoint:not(#wp-input)',
         distance: 10,
         start: function(e) {
             // Modified jquery-ui source to add-to-selection when holding shift.

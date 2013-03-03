@@ -12,15 +12,13 @@ var updateEach = function(update, $group) {
 
 var updateModels = function($obj, update, $group) {
     
-    app.dispatcher.trigger('saving');
-    
     if ($obj.hasClass('ui-selected')) {
         
         if (!$group) $group = $('.ui-selected');
         updateEach(update, $group);
         
     } else {
-        update.call($obj.data('view'), true);
+        update.call($obj.data('view'));
     }
     
 };

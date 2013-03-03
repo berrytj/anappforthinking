@@ -12,8 +12,8 @@ var app = app || {};
         
 		// The DOM events specific to an item.
 		events: {
-		    'click .input': 'doNothing',
-		    'click'       : 'cleanup',
+		    'click .input' : 'doNothing',
+		    'click'        : 'cleanup',
 		},
         
 		initialize: function() {
@@ -27,9 +27,10 @@ var app = app || {};
 		render: function() {
 		    
 		    var onPage = this.$el.parents().length;
-		    var options = ANIM_OPTS;
 		    
 		    if (this.model.get('text')) {
+		        
+		        var options = ANIM_OPTS;
 		        
 		        if (!onPage) {
 		            this.putBackOnPage(this.$el);
@@ -80,17 +81,18 @@ var app = app || {};
                 top:  pos.top  * rel_factor
                 
             }, ANIM_OPTS);
+            
 		},
 		
-		updateLocation: function(solo) {
+		updateLocation: function() {
 		    
 		    this.createUndo();
-		    this.saveLocation(solo);
+		    this.saveLocation();
 		    
 		},
 		
-		saveLocation: function(solo) {
-//		    console.log(this.model);
+		saveLocation: function() {
+		    
 		    var loc = this.$el.offset();
 		    
 		    this.model.save({
@@ -98,13 +100,7 @@ var app = app || {};
 		        x: loc.left / app.factor,
 		        y: loc.top  / app.factor
 		        
-		    }, {
-		                       // Element has already moved; pass silently to
-		        silent: true,  // avoid micro-movements due to re-rendering.
-		        success: function() {
-		                    if (solo) app.dispatcher.trigger('saved');
-		                 }
-		    });
+		    }, { silent: true });  // Element has already moved
 		    
 		},
 		
@@ -133,22 +129,18 @@ var app = app || {};
 			app.Undos.create(current_state);
 		},
 		
-		clear: function(solo) {
+		clear: function() {
 		    
 		    this.createUndo();
-		    
-		    this.model.save({ text: "" }, {
-		        success: function() {
-		                    if (solo) app.dispatcher.trigger('saved');
-		                 }
-		    });
+		    this.model.save({ text: "" });
 		},
 		
 		setInitialDragPositions: function(ui) {
 		    
 		    // If dragging selected mark, save initial location
             // of all selected marks as basis for relative position
-            // adjustments during dragging:
+            // adjustments during dragging.
+            
             $('.ui-selected').each(function() {
                 
                 var pos = $(this).offset();
@@ -175,24 +167,24 @@ var app = app || {};
 		
 		makeDraggable: function() {
 		    
-		    var view = this;
+		    var that = this;
 		    
 		    this.$el.draggable({
 		        
                 start: function(e, ui) {
                     
-                    app.dragging = true;  // To prevent input field from opening due to mousedown.
+                    app.dragging = true;          // To prevent input field from opening due to click.
                     $(this).addClass('dragged');  // To prevent mark from going into edit mode once the drag ends / mouse is lifted.
                     
                     if ($(this).hasClass('ui-selected')) {
-                        view.setInitialDragPositions(ui);
-                    } else {  // If dragging unselected mark:
+                        that.setInitialDragPositions(ui);
+                    } else {
                         app.dispatcher.trigger('clear:selected');
                     }
                 },
                 
                 drag: function(e, ui) {
-                    if ($(this).hasClass('ui-selected')) view.updateDragPositions(ui);
+                    if ($(this).hasClass('ui-selected')) that.updateDragPositions(ui);
                 },
                 
                 stop: function() {
@@ -200,7 +192,7 @@ var app = app || {};
                     if (app.cancelDrag === true) {
                         app.cancelDrag = false;
                     } else {
-                        updateModels($(this), view.updateLocation);
+                        updateModels($(this), that.updateLocation);
                     }
                     
                 }

@@ -11,19 +11,18 @@ var WP_FONT_SIZE = 16;
     
 	app.WaypointView = app.ObjectView.extend({
 	    
-	    className: "waypoint",
+	    className: 'waypoint',
         
 		// Cache the template function for a single waypoint.
 		template: _.template( $('#waypoint-template').html() ),
 		
-		events: _.extend({ 'click': 'toggleSelected' }, app.ObjectView.prototype.events),
+		events: _.defaults({ 'click': 'toggleSelected' }, app.ObjectView.prototype.events),
 		
 		initialize: function() {
 		    
 		    app.ObjectView.prototype.initialize.call(this);  // Call super.
 		    
 		    this.tag = this.createTag(this.model.get('text'));
-		    
 		},
 		
 		render: function() {
@@ -48,7 +47,7 @@ var WP_FONT_SIZE = 16;
 		        
 		        var view = new app.TagView({
 		            waypoint: this,
-		            text: text
+		            text: text,
 		        });
 		        
 			    $('#waypoint-tags').prepend(view.el);
@@ -56,9 +55,9 @@ var WP_FONT_SIZE = 16;
 			    if (!text) view.$el.hide();
 			    
 			    return view;
-			    
 		},
 		
+		shrinkwrap: function() {},
 		zoomSize: function() {},  // Don't change waypoint size when zooming. May change.
 		
 		toggleSelected: function(e) {

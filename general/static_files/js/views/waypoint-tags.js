@@ -15,17 +15,14 @@ var TAGS_LEFT = $('#waypoint-tags').offset().left;
 	app.WaypointTagsView = Backbone.View.extend({
 	    
 	    el: '#waypoint-tags',
-
-		// The DOM events specific to an item.
+        
 		events: {
-		    // switch donothing to cleanup
-		    'mousedown #hide-tags'   : 'doNothing',
-		    'mousedown .waypoint-tag': 'doNothing',
-		    'click #hide-tags'       : 'hideTags',
-		    'click #add-waypoint'    : 'showInput',
+		    'click' : 'doNothing', // switch doNothing to cleanup
+		    'click #add-waypoint' : 'showInput',
+		    'click #hide-tags'    : 'hideTags',
 		},
 		
-		hideTags: function() {
+		hideTags: function(e) {
 		    
 		    var button = this.$('#hide-tags');
 		    
@@ -47,20 +44,21 @@ var TAGS_LEFT = $('#waypoint-tags').offset().left;
 		    
 		},
 		
-		showInput: function() {
+		showInput: function(e) {
 		    
-		    var $input = $('#waypoint-input');
+		    var $input = $('#wp-input');
 		    
-		    var relative_x = ( $(window).width() - $input.width() ) / 2;
+		    var relative_x = ( $(window).width()  - $input.width() ) / 2;
 		    var relative_y = ( $(window).height() - $input.outerHeight() ) * ORIG_WP_Y_FACTOR;
 		    
 		    var left = relative_x + $(document).scrollLeft();
 	        var top  = relative_y + $(document).scrollTop();
 	        
-	        $input.show().offset({ left: left, top: top }).focus();
+	        $input.show()
+	              .offset({ left: left, top: top })
+	              .focus();
 	        
 //	        $window.keyup... don't allow more than one shift+enter
-            
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },

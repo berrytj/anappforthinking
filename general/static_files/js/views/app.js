@@ -29,7 +29,7 @@ var WAIT_FOR_PASTE = 100;
 var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
-var TIME = 150;  // Go slower if you can make font size animation less choppy.
+var TIME = 0;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 var EXTRA = 1.2;
                                                              // Get items for this wall only.  Don't 
@@ -46,18 +46,21 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
         
 		// Delegated events. Switch from mousedown to click for showing input?
 		events: {
-		    'click'               : 'waitThenToggle',
-			'click #input'        : 'doNothing',
-			'click #trash-can'    : 'doNothing',
-			'keypress #input'         : 'createMark',
-            'keypress #waypoint-input': 'createWaypoint',
-			'keydown'                 : 'checkForZoom',
-			'mouseup'                 : 'resetDragging',
+		    'click'              : 'toggleInput',
+			'click #input'       : 'doNothing',
+			'click #trash-can'   : 'doNothing',
+			'keypress #input'    : 'createMark',
+            'keypress #wp-input' : 'createWaypoint',
+			'keydown'            : 'checkForZoom',
+			'mouseup'            : 'resetDragging', //move into toggle input?
 		},
+		
+		
 		
 	  //////////////////////////////
 	  // ***** INITIALIZING ***** //
 	  //////////////////////////////
+		
 		
 		initialize: function() {
 			
@@ -81,9 +84,8 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		setAppVariables: function() {
 		    
-			app.factor = 1;          // Keep track of zoom factor.
-			app.dragging  = false;   // To distinguish between click and drags.
-			app.mousedown = false;   // To disable selecting if input appears while mouse is still down.
+			app.factor = 1;        // Keep track of zoom factor.
+			app.dragging = false;  // To distinguish between click and drags.
 		    app.queue = $.Deferred();
 			app.queue.resolve();
 		    
@@ -127,13 +129,16 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		listenToCollection: function(coll) {
 		    
-		    coll.on('add',   this.createViewForModel, this);
-		    coll.on('reset', this.renderCollection,   this);
+		    var that = this;
+		    coll.on('add', function(model) {
+		        if (!model.get('silent')) that.createViewForModel(model);
+		    });
 		    
+		    coll.on('reset', this.renderCollection, this);
 		},
 		
 		createViewForModel: function(model) {
-			
+		    
 			if (model.get('text')) {
 			    
 			    var Constructor = (model.type === 'mark') ? app.MarkView : app.WaypointView;
@@ -176,19 +181,21 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 	        
 		},
 		
+		
+		
 	  /////////////////////////////
 	  // ***** INTERACTING ***** //
 	  /////////////////////////////
+		
 		
 		hideInputs: function(e) {
 		    
 		    var open;
 		    
 		    open = this.closeInput(e, this.input);
-		    if (!open) open = this.closeInput(e, this.$('#waypoint-input'));
+		    if (!open) open = this.closeInput(e, this.$('#wp-input'));
 		    
 		    return open;
-		    
 		},
 		
 		closeInput: function(e, $input) {
@@ -200,20 +207,9 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		},
 		
-		waitThenToggle: function(e) {
-		                              // Noted so that you can disable selector if
-//		    app.mousedown = true;     // input appears while mouse is still down.
-		    
-		    var view = this;
-		    // Showing the input and dragging both stem from the mousedown event;
-		    // here we're waiting to see if the user drags before showing the input.
-		    // May be removed if we decide to use the click event instead of mousedown.
-//		    setTimeout(function() {
-		        if (!app.dragging) view.toggleInput(e);
-//		    }, WAIT_FOR_DRAG);
-		},
-		
 		toggleInput: function(e) {
+		    
+		    if (app.dragging) return;
 		    
 		    var open = this.hideInputs(e);
 		    
@@ -239,23 +235,26 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		},
 		
 		showInput: function(e) {
-		                                                          // Prevent selector from showing up
-		    if (app.mousedown) $('#wall').selectable('disable');  // if input has already appeared.
 		    
-		    var $input = this.input;
+		    this.input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
+		              .width(app.factor * ORIG_INPUT_WIDTH)
+		              .height(app.factor * ORIG_INPUT_HEIGHT)
+		              .show()
+		              .offset({
+		                   left: e.pageX - INPUT_OFFSET_X,
+		                   top:  e.pageY - INPUT_OFFSET_Y
+		               });
 		    
-		    $input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
-		          .width(app.factor * ORIG_INPUT_WIDTH)
-		          .height(app.factor * ORIG_INPUT_HEIGHT)
-		          .show()
-		          .offset({
-		               left: e.pageX - INPUT_OFFSET_X,
-		               top:  e.pageY - INPUT_OFFSET_Y
-		           });
-		    
-		    $input.focus();
+		    this.input.focus();
 		},
 		
+		
+		
+	  ////////////////////////////////
+	  // ***** COPY / PASTING ***** //
+	  ////////////////////////////////
+	    
+	    
 		cut: function() {
 		    
             this.undoMarker('group_end');
@@ -269,6 +268,8 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var $selected = this.$('.ui-selected');
 		    
 		    if ($selected.length) {
+		        
+		        app.dispatcher.trigger('enable:paste');
 		        
 		        app.Clipboard.reset();
 		        
@@ -305,11 +306,10 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var that = this;
 		    setTimeout(function() {
 		        
-//		        this.undoMarker('group_end');
 		        var noText = that.convertTextToMarks();
-		        if (noText) that.pasteFromColl();
+		        if (noText && app.Clipboard.length) that.pasteFromColl();
 		        
-		    }, WAIT_FOR_PASTE);
+		    }, WAIT_FOR_PASTE); // Listen for paste event instead? Different across browsers.
 		    
 		},
 		
@@ -320,40 +320,39 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		              .offset({ left: $(document).scrollLeft(),
 		                        top:  $(document).scrollTop()  })
 		              .focus();
-		    
 		},
 		
 		convertTextToMarks: function() {
 		    
 		    var text = this.input.val();
-		    
 		    if (!text) return true;
-		    
 		    this.input.css('opacity', 1).val('').hide();
 		    
 		    var saving = $.Deferred();
-		    
 		    var marks = this.pasteFromText(text, saving);
-		    this.evenlySpace(marks);
-		    this.saveAfterPasting(marks, saving);
 		    
+		    var that = this;
+		    $.when(saving).done(function() {
+		        that.spacePastedMarks(marks);
+		    });
 		},
 		
-		saveAfterPasting: function(marks, saving) {
+		spacePastedMarks: function(marks) {
 		    
-		    var animating = this.getPromise(marks);
+		    this.evenlySpace(marks);
 		    
-		    $.when(animating, saving).done(function() {
+		    var animating = this.promiseFromArray(marks);
+		    
+		    animating.done(function() {
 		        
 		        _.each(marks, function($mark) {
 		            $mark.data('view').saveLocation();
 		        });
 		        
 		    });
-		    
 		},
 		
-		getPromise: function(marks) {
+		promiseFromArray: function(marks) {
 		    
 		    var $marks = $();
 		    
@@ -366,61 +365,65 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		pasteFromText: function(text, saving) {
 		    
-		    var lines = text.split('\n');
+		    var lines = _.without(text.split('\n'), '');
 		    var last = lines.length - 1;
 		    var saving_last = null;
-		    var view;
 		    var that = this;
 		    var x = $(document).scrollLeft() + ($(window).width() - ORIG_INPUT_WIDTH) / 2;
 		    var y = $(document).scrollTop() + $(window).height() * PASTE_Y_FACTOR;
 		    var marks = [];
 		    
+		    this.undoMarker('group_end');
+		    
 		    _.each(lines, function(line, i) {
 		        
 		        if (i === last) saving_last = saving;
-		        view = that.pasteLineFromText(line, i, x, y, saving_last);
+		        var model = that.pasteLineFromText(line, x, y, saving_last);
+		        var view  = that.createViewForModel(model);
 		        marks.push(view.$el);
 		        
 		    });
 		    
 		    return marks;
-		    
 		},
 		
-		pasteLineFromText: function(line, i, x, y, waiting) {
+		pasteLineFromText: function(line, x, y, waiting) {
 		    
 		    var attrs = {
-			    wall: WALL_URL,
-			    text: line,
-			    x: x,
-			    y: y,
-			};
+		        wall: WALL_URL,
+		        text: line,
+		        x: x,
+		        y: y,
+		        silent: true,
+		    };
 		    
-		    var model = app.Marks.create(attrs, {
-		                    success: function(model) {
-		                                if (waiting) waiting.resolve();
-//		                                that.createEmptyUndo(model);
-//		                                placeMarker('group_start');
-		                             },
-		                    silent: true,
-		    });
+		    var that = this;
+		    var model = app.Marks.create(attrs, { success: function(model) {
+		        
+		        that.createEmptyUndo(model);
+		        
+		        if (waiting) {
+		            waiting.resolve();
+		            that.undoMarker('group_start');
+		        }
+		        
+		    }});
 		    
-		    return this.createViewForModel(model);
-		    
+		    return model;
 		},
 		
 		pasteFromColl: function() {
 		    
-		    var placeMarker = _.after(app.Clipboard.length, this.undoMarker);
-		    
+		    this.undoMarker('group_end');
 		    var that = this;
-		    app.Clipboard.each(function(model) {
-		        that.pasteMarkFromColl(model, placeMarker);
+		    var last = app.Clipboard.length - 1;
+		    app.Clipboard.each(function(model, i) {
+		        that.pasteMarkFromColl(model, i, last);
 		    });
 		    
 		},
 		
-		pasteMarkFromColl: function(model, placeMarker) {
+		pasteMarkFromColl: function(model, i, last) {
 		    
 		    var clone = this.clone(model);
 		    
@@ -431,13 +434,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    });
 		    
 		    var that = this;
-		    this.getColl(clone.type).create(clone, {
-		        success: function(model) {
-		                    that.createEmptyUndo(model);
-		                    placeMarker('group_start');
-		                 }
-		    });
-		    
+		    this.getColl(clone.type).create(clone, { success: function(model) {
+		        
+		        that.createEmptyUndo(model);
+		        if (i === last) that.undoMarker('group_start'); // Need to do invocation to preserve i?
+                
+		    }});
 		},
 		
 		// Clones a model without replicating the id.
@@ -450,12 +452,14 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var clone = new Const(attrs);
 		    
 		    return clone;
-		    
 		},
+		
+		
 		
 	  //////////////////////////////////
 	  // ***** CREATING OBJECTS ***** //
 	  //////////////////////////////////
+		
 		
 		createMark: function(e) {
 		    // This fires on keypress: see if you can figure out how to
@@ -464,7 +468,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		},
 		
 		createWaypoint: function(e) {
-		    this.checkForNewModel(e, this.$('#waypoint-input'));
+		    this.checkForNewModel(e, this.$('#wp-input'));
 		},
 		
 		checkForNewModel: function(e, $input) {
@@ -497,7 +501,6 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			var attributes = this.getModelAttributes( text, $input.offset() );
 			
 			coll.create(attributes, { success: this.createEmptyUndo });
-			
 		},
 		
 		createEmptyUndo: function(model) {
@@ -519,25 +522,22 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		undoMarker: function(type) {
 		    
             app.Undos.create({
-                
                 wall: WALL_URL,
                 type: type     // 'group_end' or 'group_start'
-                
-            }, {
-                success: function() {
-                            var status = (type === 'group_end') ? 'saving' : 'saved';
-                            app.dispatcher.trigger(status);
-                         }
             });
         },
+		
+		
+		
 		
 	  /////////////////////////
 	  // ***** LISTING ***** //
 	  /////////////////////////
 		
+		
 		leftAlignMarks: function($marks) {
 		    
-		    var x = $marks.first().offset().left;  // Use top mark instead of first id?
+		    var x = $marks.first().offset().left;  // Use top mark instead of first id, evenlySpace can give you top one
 		    
 		    $marks.each(function() {
 		        
@@ -628,54 +628,79 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		},
 		
+		
+		
 	  /////////////////////////
 	  // ***** UNDOING ***** //
 	  /////////////////////////
 		
+		
+		// NOTE: Terminology here assumes an undo is being performed. If a redo
+		// is being performed, undo means redo and redo means undo (as you can
+		// see from the assignments below).  I decided to leave it undo-specific
+		// because using ambiguous names made the functions much less clear/readable.
+		
 		undo: function(isRedo) {
 		    
-		    // NOTE: Terminology here assumes an undo is being performed. If a redo
-		    // is being performed, undo means redo and redo means undo (as you can
-		    // see from the assignments below).  I decided to leave it undo-specific
-		    // because using ambiguous names made the functions much less clear/readable.
-		    
-		    var Undos, Redos;
+		    var Undos = app.Undos, Redos = app.Redos;
 		    
 		    if (isRedo) {
-		        Undos = app.Redos;  // Global redo collection
-		        Redos = app.Undos;  // Global undo collection
-		    } else {
-		        Undos = app.Undos;  // Global undo collection
-		        Redos = app.Redos;  // Global redo collection
+		        Undos = Redos;
+		        Redos = app.Undos;
 		    }
 		    
 		    var undo = Undos.pop();
 		    
-		    if (undo) {
+		    if (undo) this.prepareUndo(undo, Undos, Redos);
+		},
+		
+		prepareUndo: function(undo, Undos, Redos) {
+		    
+		    var type = undo.get('type');
+		    
+		    if (type === 'group_start') {
 		        
-		        var type = undo.get('type');
+		        undo.destroy();
+		        Redos.create({ wall: WALL_URL, type: 'group_end' });
+		        this.performUndo(Undos.pop(), Undos, Redos, true);
 		        
-		        if (type === 'group_end') {
-		            
-		            console.log('broken');
-		            // If type is 'group_end', connection was lost during saving;
-		            // just ignore and move to the next undo.
-		            this.undo(isRedo);
-		            
-		        } else if (type === 'group_start') {
-		            
-		            undo.destroy();
-		            Redos.create({ wall: WALL_URL, type: 'group_end' });
-		            this.performUndo(Undos.pop(), Undos, Redos, true);
-		            
-		        } else {
-		            this.performUndo(undo, Undos, Redos);
-		        }
-		        
+		    } else if (type === 'group_end') {
+		        console.log('broken');
 		    } else {
-		        app.dispatcher.trigger('saved');
+		        this.performUndo(undo, Undos, Redos);
 		    }
 		    
+		},
+		
+		performUndo: function(undo, Undos, Redos, group) {
+		        
+		        if (undo.get('type') === 'group_end') console.log('broken');
+		        
+		        var coll = this.getColl(undo.get('type'));
+		        var obj = coll.get(undo.get('obj_pk'));
+                
+                Redos.create( this.currentState(obj) );
+                obj.save( this.formerState(undo) );
+                undo.destroy();
+                
+                if (group) this.recurseUndo(Undos, Redos);
+		},
+		
+		recurseUndo: function(Undos, Redos) {
+		    
+		    var undo = Undos.pop();
+		    
+            if (undo.get('type') === 'group_end') {
+		        
+		        undo.destroy();
+		        Redos.create({
+		            wall: WALL_URL,
+		            type: 'group_start',
+		        });
+		        
+		    } else {
+                this.performUndo(undo, Undos, Redos, true);
+            }
 		},
 		
 		currentState: function(obj) {
@@ -701,46 +726,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		},
 		
-		performUndo: function(undo, Undos, Redos, group) {
-		        
-		        var coll = this.getColl( undo.get('type') );
-		        var obj  = coll.get( undo.get('obj_pk') );
-                
-                Redos.create( this.currentState(obj) );
-                obj.save( this.formerState(undo) );
-                undo.destroy({
-                    success: function() {
-                                if (!group) app.dispatcher.trigger('saved');
-                             }
-                });
-                
-                if (group) this.recurseUndo(Undos, Redos);
-		},
 		
-		recurseUndo: function(Undos, Redos) {
-		    
-		    var undo = Undos.pop();
-		    
-            if (undo.get('type') === 'group_end') {
-		        
-		        undo.destroy();
-		        Redos.create({
-		            wall: WALL_URL,
-		            type: 'group_start'
-		        }, {
-		            success: function() {
-		                app.dispatcher.trigger('saved');
-		            }
-		        });
-		        
-		    } else {
-                this.performUndo(undo, Undos, Redos, true);
-            }
-		},
 		
 	  /////////////////////////
 	  // ***** ZOOMING ***** //
 	  /////////////////////////
+		
 		
 		checkForZoom: function(e) {
 		    
@@ -781,6 +772,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var new_width  = $wall.width()  * rel_factor;
             var new_height = $wall.height() * rel_factor;
             var new_factor = app.factor * rel_factor;
+            console.log(new_factor);
             
             if( new_width  > $(window).width()  &&  // Don't shrink page below window size.
                 new_height > $(window).height() &&
@@ -826,9 +818,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
             }, ANIM_OPTS);
         },
 		
+		
+		
 	  ///////////////////////////////
 	  // ***** MISCELLANEOUS ***** //
 	  ///////////////////////////////
+		
 		
 		getColl: function(type) {
 		    
@@ -845,11 +840,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		},
 		
 		resetDragging: function() {
-		    
 		    app.dragging = false;
-		    
-		    app.mousedown = false;
-		    this.$('#wall').selectable('enable');
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },

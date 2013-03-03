@@ -16,12 +16,16 @@ var API_NAME = "/api/v1";
         
         sync: function(method, model, options) {
             
-            var that = this;
+            app.dispatcher.trigger('saving');
             
+            var that = this;
             app.queue = app.queue.then(function() {
                 return Backbone.sync.call(that, method, model, options);
             });
             
+            app.queue.done(function() {
+                if (app.queue.state() === 'resolved') app.dispatcher.trigger('saved');
+            });
         },
         
         base_url: function() {

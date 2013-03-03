@@ -6,7 +6,7 @@ body {
 #wall {
     position:absolute;
     width:5000px;
-    height:3000px;
+    height:2000px;
     background-image: url('../images/4.jpg');
     background-size:10% 10%;
 }
@@ -24,6 +24,7 @@ body {
 	
 	font:14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
     line-height:140%;
+/*    opacity:0.85;*/
 	
 	z-index:10000;
 }
@@ -37,21 +38,18 @@ body {
     position:absolute;
     cursor:pointer;
     z-index:10;
+    
+    width:370px;
+    padding:3px 5px;
     border-radius:2px;
-    padding:2px 0px 3px 5px;
+    
+    line-height:0px;
 }
 
 label {
     display:inline;
     white-space:pre-wrap;
     line-height:140%;
-}
-
-.labelBlock {
-    display:inline-block;
-    width:370px;
-    cursor:pointer;
-    line-height:0px;
 }
 
 .bullet {
