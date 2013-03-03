@@ -37,7 +37,7 @@ var app = app || {};
 		            options['duration'] = 0;  // Don't animate when first putting on page.
 		        }
 		        
-			    if (!noDraw) this.draw(options);
+			    if (noDraw !== 'noDraw') this.draw(options);
 			    this.zoomSize();
 			    this.makeDraggableOnce();
 			    

@@ -137,7 +137,7 @@ var NARROW = 0.8;
 			    this.createUndo(current_text);
 			    this.model.save({ text: text }, { silent: true });
 			    this.$('label').text(text);
-			    this.render(true);  // `true` is signal not to redraw.
+			    this.render('noDraw');
 			    
 			}
 		    
