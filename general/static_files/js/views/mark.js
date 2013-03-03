@@ -2,19 +2,18 @@
 // ---------
 
 var app = app || {};
-var BLOCK_PADDING = 0;
-var MARK_PADDING = 5;
-var PRIMARY_FONT_SIZE = 14;
-var ORIG_MAX_WIDTH = 370;
-var ORIG_INPUT_WIDTH = 380;
-var ORIG_INPUT_HEIGHT = 38;
-var SINGLE_ROW_HEIGHT = 25;
 var X_FACTOR = 1.3;
 var TOP_INDEX = 9995;  // Toolbar is a z-index 9999.
 var BOTTOM_INDEX = 10;
+var ORIG_FONT_SIZE = 14;
 var ORIG_X_PADDING = 5;
 var ORIG_Y_PADDING = 3;
+var MARK_WIDTH = 370;
+var OUTER_MARK_WIDTH = 370 + ORIG_X_PADDING * 2;
+var MARK_HEIGHT = 38;
+var SINGLE_ROW_HEIGHT = 25;
 var ORIG_RADIUS = 2;
+var NARROW = 0.8;
 
 (function() {
     
@@ -29,9 +28,11 @@ var ORIG_RADIUS = 2;
         
 		// The DOM events specific to an item.
 		events: _.extend({
-		    'click .labelBlock': 'respondToClick',
+		    
+		    'click':           'respondToClick',
 		    'keypress .input': 'checkIfFinished',
-		    }, app.ObjectView.prototype.events),
+		    
+		}, app.ObjectView.prototype.events),
 		
 		initialize: function() {
 		    app.ObjectView.prototype.initialize.call(this);
@@ -42,12 +43,12 @@ var ORIG_RADIUS = 2;
 		    
 		    var mark = {};
 		    mark['border-radius'] = app.factor * ORIG_RADIUS + 'px';
-		    mark['width'] = app.factor * ORIG_MAX_WIDTH;
+		    mark['width'] = app.factor * MARK_WIDTH;
 		    mark['padding-left'] = mark['padding-right'] = app.factor * ORIG_X_PADDING + 'px';
 		    mark['padding-top'] = mark['padding-bottom'] = app.factor * ORIG_Y_PADDING + 'px';
 		    
 		    this.$el.css(mark);
-		    this.$('label').css({ 'font-size': app.factor * PRIMARY_FONT_SIZE + 'px' });
+		    this.$('label').css({ 'font-size': app.factor * ORIG_FONT_SIZE + 'px' });
 		    
 		    this.shrinkwrap();
 		},
@@ -60,23 +61,19 @@ var ORIG_RADIUS = 2;
 		    
 		    var $mark = this.$el;
 		    
-		    if ($mark.hasClass('dragged')) {
-		        $mark.removeClass('dragged');  // Don't edit if the click comes at the end of a drag op.
-		    } else if (e.shiftKey || e.metaKey) {
-		        this.toggleSelected($mark);
-		    } else {
-		        this.edit($mark);
-		    }
+		    if ($mark.hasClass('dragged')) return;  // Don't edit if the click comes at the end of a drag.
+		    
+		    (e.shiftKey || e.metaKey) ? this.toggleSelected($mark) : this.edit($mark);
 		},
 		
 		inputWidth: function(height) {
 		    
-//		    return (height < SINGLE_ROW_HEIGHT) ? ORIG_INPUT_WIDTH : this.$('.labelBlock').width();
+		    var current = this.$el.width();
+		    var zoomed = app.factor * MARK_WIDTH;
+		    var tooNarrow = current < zoomed * NARROW;
+		    var oneRow = height < SINGLE_ROW_HEIGHT;
 		    
-            return ORIG_INPUT_WIDTH;
-            // Now that you can return within marks, they can be more than one row and still
-            // too narrow, so just return orig width until you iron that out.
-		    
+		    return (tooNarrow || oneRow) ? zoomed : current;
 		},
 		
 		edit: function($mark) {
@@ -96,7 +93,7 @@ var ORIG_RADIUS = 2;
 		
 		showInput: function(width, height) {
 		    
-		    this.$('.input').css({ 'font-size': app.factor * PRIMARY_FONT_SIZE })
+		    this.$('.input').css({ 'font-size': app.factor * ORIG_FONT_SIZE })
 		                    .width(width)
 		                    .height(height)
 		                    .show()
@@ -138,7 +135,9 @@ var ORIG_RADIUS = 2;
 		    if (current_text !== text) {  // If text has changed:
 		        
 			    this.createUndo(current_text);
-			    this.model.save({ text: text });
+			    this.model.save({ text: text }, { silent: true });
+			    this.$('label').text(text);
+			    this.render(true);  // `true` is signal not to redraw.
 			    
 			}
 		    
@@ -148,11 +147,9 @@ var ORIG_RADIUS = 2;
 		    
 		    $mark.toggleClass('ui-selected');
 		    
-		    if ( $('.ui-selected').not('.waypoint').length >= 2 ) { // At least two marks must be
-		        app.dispatcher.trigger('enable:list', true);        // selected for 'list' function to work.
-		    } else {
-		        app.dispatcher.trigger('enable:list', false);  // i.e. disable list
-		    }
+		    var num_selected = $('.ui-selected').not('.waypoint').length;
+		    var enable = (num_selected >= 2) ? true : false;  // At least two marks must be selected for 'list' function to work.
+		    app.dispatcher.trigger('enable:list', enable);
 		    
 		},
 		

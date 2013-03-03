@@ -57,6 +57,7 @@ var WP_FONT_SIZE = 16;
 			    return view;
 		},
 		
+		respondToClick: function() {},
 		shrinkwrap: function() {},
 		zoomSize: function() {},  // Don't change waypoint size when zooming. May change.
 		

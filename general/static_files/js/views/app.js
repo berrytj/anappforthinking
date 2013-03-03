@@ -31,6 +31,7 @@ var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
 var TIME = 0;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
+var ANIMATE_UNDO = { duration: 100, queue: false };  // Animation options.
 var EXTRA = 1.2;
                                                              // Get items for this wall only.  Don't 
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity returned (default is 20).
@@ -236,9 +237,9 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		showInput: function(e) {
 		    
-		    this.input.css('font-size', app.factor * PRIMARY_FONT_SIZE)
-		              .width(app.factor * ORIG_INPUT_WIDTH)
-		              .height(app.factor * ORIG_INPUT_HEIGHT)
+		    this.input.css('font-size', app.factor * ORIG_FONT_SIZE)
+		              .width(app.factor * MARK_WIDTH)
+		              .height(app.factor * MARK_HEIGHT)
 		              .show()
 		              .offset({
 		                   left: e.pageX - INPUT_OFFSET_X,
@@ -772,7 +773,6 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var new_width  = $wall.width()  * rel_factor;
             var new_height = $wall.height() * rel_factor;
             var new_factor = app.factor * rel_factor;
-            console.log(new_factor);
             
             if( new_width  > $(window).width()  &&  // Don't shrink page below window size.
                 new_height > $(window).height() &&

@@ -30,8 +30,9 @@ body {
 }
 
 #input {
-    /* To avoid 1px jump after initial creation. */
+    /* To avoid jump after initial creation. */
     padding-left:4px;
+    padding-top:2px;
 }
 
 .mark {

@@ -24,20 +24,20 @@ var app = app || {};
 			this.makeDraggableOnce = _.once(this.makeDraggable);
 		},
 		
-		render: function() {
+		render: function(noDraw) {
 		    
 		    var onPage = this.$el.parents().length;
 		    
 		    if (this.model.get('text')) {
 		        
-		        var options = ANIM_OPTS;
+		        var options = _.clone(ANIMATE_UNDO);
 		        
 		        if (!onPage) {
 		            this.putBackOnPage(this.$el);
-		            options = { duration: 0 };  // Don't animate when first putting on page.
+		            options['duration'] = 0;  // Don't animate when first putting on page.
 		        }
 		        
-			    this.draw(options);
+			    if (!noDraw) this.draw(options);
 			    this.zoomSize();
 			    this.makeDraggableOnce();
 			    
@@ -50,13 +50,11 @@ var app = app || {};
 		
 		draw: function(options) {
 		    
-		    this.$el.html(this.template(this.model.toJSON()))
-			        .animate({
-			            
+		    this.$el.html(this.template( this.model.toJSON() ))
+		            .animate({
 			            left: this.model.get('x') * app.factor,
 			            top:  this.model.get('y') * app.factor
-			            
-			         }, options);
+			        }, options);
 		},
 		
 		putBackOnPage: function($el) {
@@ -107,8 +105,12 @@ var app = app || {};
 		cleanup: function(e) {
 		    
 		    e.stopPropagation();
-		    app.dispatcher.trigger('click:wall', e);
+		    
+		    this.respondToClick(e);
 		    this.$el.removeClass('dragged');  // Free the element to be edited next time it gets clicked.
+		    
+		    app.dispatcher.trigger('click:wall', e);
+		    
 		},
 		
 		createUndo: function() {
