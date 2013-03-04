@@ -25,26 +25,43 @@
 }
 
 .waypoint {
-	overflow:hidden;
 	cursor:default;
 	position:absolute;
+	width:84px;
+	height:84px;
 	font-family:HelveticaNeue;
 	font-weight:bold;
 	font-size:16px;
-	width:140px;
-/*	height:20px;*/
-	text-align:center;
-	padding:40px 0px;
 	z-index:1;
-	
-	background-color:#111111;
+}
+
+.waypoint-text {
+    position:absolute;
+    margin-top:32px;
+    margin-left:-58px;
+    z-index:2;
+    text-align:center;
+    width:200px;
+    
+    background-color:#111111;
     color:transparent;
     text-shadow:0px 1px 1px rgba(255,255,255,0.7);
     -webkit-background-clip:text;
     -moz-background-clip:text;
     background-clip:text;
-    
-    border:1px dotted purple;
+}
+
+.waypoint-cont {
+    display:inline;
+}
+
+svg {
+    position:absolute;
+    z-index:1;
+}
+
+.svg-selected {
+    stroke:orange;
 }
 
 #wp-input {

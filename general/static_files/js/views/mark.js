@@ -107,14 +107,18 @@ var NARROW = 0.8;
 		    var $input = this.$('.input');
 		    
 		    if ( $input.is(':visible') ) {
-		                                                // Mark was raised for editing;
-		        this.$el.css('z-index', BOTTOM_INDEX);  // move back to normal position.
 		        
 			    var text = $input.val().trim();
 			    
 			    if (text) {
+			        
 			        this.saveEdit(text);
-			        $input.fadeOut(INPUT_FADE);
+			        
+			        var that = this;
+			        $input.fadeOut(INPUT_FADE, function() {
+			            that.$el.css('z-index', BOTTOM_INDEX);
+			        });
+			        
 			    } else {
 			        this.clear();  // Clear mark if closed with no text.
 			    }

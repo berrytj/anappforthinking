@@ -30,7 +30,7 @@ var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
 var INPUT_FADE = 100;
-var LOADING_FADE = 1000;
+var LOADING_FADE = 350;
 var TIME = 0;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 var ANIMATE_UNDO = { duration: 100, queue: false };  // Animation options.
@@ -38,6 +38,9 @@ var EXTRA = 1.2;
                                                              // Get items for this wall only.  Don't 
 var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity returned (default is 20).
 
+var WP_PADDING = 6;
+var CIRCLE_WIDTH = 84;
+var STROKE_COLOR = '#AAAAAA';
 
 (function() {
     
@@ -128,6 +131,16 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		hideLoading: function() {
 		    
 		    this.$('#loading').fadeOut(LOADING_FADE);
+		    
+		    $('.waypoint').not('#wp-input').each(function() {
+		        
+		        var $text = $(this).find('.waypoint-text');
+		        var $cont = $(this).find('.waypoint-cont');
+		        var text_width = $cont.width() + WP_PADDING;
+		        $text.width(text_width);
+		        $text.css('margin-left', (CIRCLE_WIDTH - text_width) / 2 + 'px');
+		        
+		    });
 		    
 		},
 		
@@ -328,6 +341,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		    this.$('.ui-selected').each(function() {
                 $(this).removeClass('ui-selected');
+                $(this).find('circle').css('stroke', STROKE_COLOR);
             });
             
 		},

@@ -21,8 +21,10 @@ $(function() {
     });
     
     $('#wall').selectable({
+        
         filter: '.mark, .waypoint:not(#wp-input)',
         distance: 10,
+        
         start: function(e) {
             // Modified jquery-ui source to add-to-selection when holding shift.
             // (Add-to-selection is default behavior when holding cmd / ctrl.)
@@ -31,9 +33,19 @@ $(function() {
             // Update to avoid triggering this when shift-selecting:
             app.dispatcher.trigger('enable:list', false);
         },
+        
+        selecting: function(e, ui) {
+            $(ui.selecting).find('circle').css('stroke', 'orange');
+        },
+        
+        unselecting: function(e, ui) {
+            $(ui.unselecting).find('circle').css('stroke', STROKE_COLOR);
+        },
+        
         stop: function() {
             if ($('.ui-selected').length) app.dispatcher.trigger('enable:list', true);
         },
+        
     });
     
     var alert = 'Data is still being sent to the server.  You may lose unsaved changes if you close this page.';

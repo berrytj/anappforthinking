@@ -112,7 +112,7 @@ button {
     opacity:1;
 }
 
-.ui-selected, .ui-selecting {
+.mark.ui-selecting, .mark.ui-selected {
     box-shadow:0px 0px 3px 1px orange;
 }
 
