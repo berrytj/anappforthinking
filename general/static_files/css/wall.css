@@ -1,5 +1,7 @@
 body {
-    font:14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+    font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Arial, sans-serif;
+    font-weight:300;
+    font-size:14px;
     color:#3d3d3d;
 }
 
@@ -21,13 +23,18 @@ body {
     text-align:center;
     font-size:32px;
     z-index:0;
-    
-    background-color:#111111;
-    color:transparent;
-    text-shadow:0px 1px 1px rgba(255,255,255,0.5);
-    -webkit-background-clip:text;
-    -moz-background-clip:text;
-    background-clip:text;
+}
+
+/* CSS overrides for webkit browsers: Safari 3+, Chrome 1+ */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  #loading {
+      background-color:#111111;
+      color:transparent;
+      text-shadow:0px 1px 1px rgba(255,255,255,0.5);
+      -webkit-background-clip:text;
+      -moz-background-clip:text;
+      background-clip:text;
+  }
 }
 
 .input {
@@ -37,15 +44,23 @@ body {
     padding:1px 5px 5px 5px;
     margin:-2px 0px 0px -6px;
 	
-	height:auto;
-	overflow:hidden;
-	resize:none;
-	
-	font:14px 'HelveticaNeue-Light', Helvetica, Arial, sans-serif;
+  	height:auto;
+  	overflow:hidden;
+  	resize:none;
+    
+    font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Arial, sans-serif;
+    font-weight:300;
     line-height:140%;
-/*    opacity:0.85;*/
+/*  opacity:0.85; */
+    color:#3d3d3d;
+    background-color:rgba(0,0,0,0.025);
 	
-	z-index:10000;
+  	z-index:10000;
+}
+
+.input:focus {
+    box-shadow:none;
+    border:inset 3px rgba(229,210,167,0.85);
 }
 
 #input {
