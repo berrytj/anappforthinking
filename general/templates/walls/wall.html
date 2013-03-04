@@ -33,6 +33,7 @@
   
   
   <div id='wall'>
+    <div id='loading'>Loading...</div>
 	<textarea id='input' class='input' spellcheck='false'></textarea>
 	<textarea id='wp-input' maxlength='22' class='waypoint' spellcheck='false' style='display:none;'></textarea>
   </div>
@@ -51,8 +52,12 @@
   </script>
   
   
-  <script type='text/template' id='waypoint-template'>	
-    <div><%- text %></div>
+  <script type='text/template' id='waypoint-template'>
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+      <circle cx="100" cy="50" r="40" stroke="gray" stroke-width="2" fill="transparent" />
+      <text x="0" y="15" fill="green"><%- text %></text>
+<!--      <div><%- text %></div> -->
+    </svg>
   </script>
   
   

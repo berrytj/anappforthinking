@@ -24,7 +24,7 @@ var app = app || {};
 			this.makeDraggableOnce = _.once(this.makeDraggable);
 		},
 		
-		render: function(noDraw) {
+		render: function() {
 		    
 		    var onPage = this.$el.parents().length;
 		    
@@ -37,7 +37,7 @@ var app = app || {};
 		            options['duration'] = 0;  // Don't animate when first putting on page.
 		        }
 		        
-			    if (noDraw !== 'noDraw') this.draw(options);
+			    this.draw(options);
 			    this.zoomSize();
 			    this.makeDraggableOnce();
 			    
@@ -52,8 +52,8 @@ var app = app || {};
 		    
 		    this.$el.html(this.template( this.model.toJSON() ))
 		            .animate({
-			            left: this.model.get('x') * app.factor,
-			            top:  this.model.get('y') * app.factor
+			            left: Math.round( this.model.get('x') * app.factor ),
+			            top:  Math.round( this.model.get('y') * app.factor )
 			        }, options);
 		},
 		
@@ -95,8 +95,8 @@ var app = app || {};
 		    
 		    this.model.save({
 		        
-		        x: loc.left / app.factor,
-		        y: loc.top  / app.factor
+		        x: Math.round( loc.left / app.factor ),
+		        y: Math.round( loc.top  / app.factor )
 		        
 		    }, { silent: true });  // Element has already moved
 		    
@@ -110,7 +110,6 @@ var app = app || {};
 		    this.$el.removeClass('dragged');  // Free the element to be edited next time it gets clicked.
 		    
 		    app.dispatcher.trigger('click:wall', e);
-		    
 		},
 		
 		createUndo: function() {
@@ -135,6 +134,7 @@ var app = app || {};
 		    
 		    this.createUndo();
 		    this.model.save({ text: "" });
+		    
 		},
 		
 		setInitialDragPositions: function(ui) {

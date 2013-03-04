@@ -94,11 +94,11 @@ var NARROW = 0.8;
 		showInput: function(width, height) {
 		    
 		    this.$('.input').css({ 'font-size': app.factor * ORIG_FONT_SIZE })
+		                    .val(this.model.get('text'))
 		                    .width(width)
 		                    .height(height)
-		                    .show()
+		                    .fadeIn(INPUT_FADE)
 		                    .focus()
-		                    .val(this.model.get('text'))
 		                    .autosize();  // Call on all inputs at the beginning?
 		},
 		
@@ -114,7 +114,7 @@ var NARROW = 0.8;
 			    
 			    if (text) {
 			        this.saveEdit(text);
-			        $input.hide();
+			        $input.fadeOut(INPUT_FADE);
 			    } else {
 			        this.clear();  // Clear mark if closed with no text.
 			    }
@@ -128,16 +128,14 @@ var NARROW = 0.8;
 		        if (e.which === ENTER_KEY) this.closeInput();
 		},
 		
-		saveEdit: function(text) {
+		saveEdit: function(new_text) {
 		    
 		    var current_text = this.model.get('text');
 		    
-		    if (current_text !== text) {  // If text has changed:
+		    if (current_text !== new_text) {
 		        
-			    this.createUndo(current_text);
-			    this.model.save({ text: text }, { silent: true });
-			    this.$('label').text(text);
-			    this.render('noDraw');
+			    this.createUndo();
+			    this.model.save({ text: new_text });
 			    
 			}
 		    

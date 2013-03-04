@@ -29,6 +29,8 @@ var WAIT_FOR_PASTE = 100;
 var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
+var INPUT_FADE = 100;
+var LOADING_FADE = 1000;
 var TIME = 0;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
 var ANIMATE_UNDO = { duration: 100, queue: false };  // Animation options.
@@ -94,8 +96,23 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		
 		populate: function() {
 		    
-		    app.Marks.fetch(FETCH_OPTS);
-			app.Waypoints.fetch(FETCH_OPTS);
+		    this.populateObjects();
+		    this.populateUndos();
+		    
+		},
+		
+		populateObjects: function() {
+		    
+		    var callback = _.after(2, this.hideLoading, this);
+		    
+		    var options = _.extend(FETCH_OPTS, { success: callback });
+		    
+		    app.Marks.fetch(options);
+			app.Waypoints.fetch(options);
+			
+		},
+		
+		populateUndos: function() {
 			
 			var callback = function(coll) {
 		        if (!coll.length) app.dispatcher.trigger('stack:empty', coll.name);
@@ -105,6 +122,12 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 			
 			app.Undos.fetch(options);
 			app.Redos.fetch(options);
+		    
+		},
+		
+		hideLoading: function() {
+		    
+		    this.$('#loading').fadeOut(LOADING_FADE);
 		    
 		},
 		
@@ -183,6 +206,80 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		},
 		
 		
+		
+		
+	  //////////////////////////////////
+	  // ***** CREATING OBJECTS ***** //
+	  //////////////////////////////////
+		
+		
+		createMark: function(e) {
+		    // This fires on keypress: see if you can figure out how to
+		    // get $(this) despite backbone handling (research jquery delegate).
+		    this.checkForNewModel(e, this.input);
+		},
+		
+		createWaypoint: function(e) {
+		    this.checkForNewModel(e, this.$('#wp-input'));
+		},
+		
+		checkForNewModel: function(e, $input) {
+            
+            var clicking = e.pageX;
+		    
+		    if (clicking || e.which === ENTER_KEY) {
+		        
+			    var text = $input.val().trim();
+			    if (text) this.createModel($input, text);
+			    $input.blur().fadeOut(INPUT_FADE, function() { $(this).val('') });
+			    
+			}
+		},
+		
+		getModelAttributes: function(text, pos) {
+		    
+			return {
+			    wall: WALL_URL,
+			    text: text,
+			    x:    Math.round( pos.left / app.factor ),
+			    y:    Math.round( pos.top  / app.factor )
+			};
+		    
+		},
+		
+		createModel: function($input, text) {
+		    
+			var coll = ($input == this.input) ? app.Marks : app.Waypoints;
+			var attributes = this.getModelAttributes( text, $input.offset() );
+			
+			coll.create(attributes, { success: this.createEmptyUndo });
+		},
+		
+		createEmptyUndo: function(model) {
+			                              // Create a blank undo so object
+			app.Undos.create({            // creation can be undone / redone.
+			    
+			    wall:   WALL_URL,
+                type:   model.type,
+			    obj_pk: model.get('id'),
+			    text:   "",
+			    x:      0,
+			    y:      0
+			    
+			});
+			
+			app.dispatcher.trigger('clear:redos');
+		},
+		
+		undoMarker: function(type) {
+		    
+            app.Undos.create({
+                wall: WALL_URL,
+                type: type     // 'group_end' or 'group_start'
+            });
+        },
+        
+        
 		
 	  /////////////////////////////
 	  // ***** INTERACTING ***** //
@@ -370,7 +467,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    var last = lines.length - 1;
 		    var saving_last = null;
 		    var that = this;
-		    var x = $(document).scrollLeft() + ($(window).width() - ORIG_INPUT_WIDTH) / 2;
+		    var x = $(document).scrollLeft() + ($(window).width() - MARK_WIDTH) / 2;
 		    var y = $(document).scrollTop() + $(window).height() * PASTE_Y_FACTOR;
 		    var marks = [];
 		    
@@ -454,80 +551,6 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 		    
 		    return clone;
 		},
-		
-		
-		
-	  //////////////////////////////////
-	  // ***** CREATING OBJECTS ***** //
-	  //////////////////////////////////
-		
-		
-		createMark: function(e) {
-		    // This fires on keypress: see if you can figure out how to
-		    // get $(this) despite backbone handling (research jquery delegate).
-		    this.checkForNewModel(e, this.input);
-		},
-		
-		createWaypoint: function(e) {
-		    this.checkForNewModel(e, this.$('#wp-input'));
-		},
-		
-		checkForNewModel: function(e, $input) {
-            
-            var clicking = e.pageX;
-		    
-		    if (clicking || e.which === ENTER_KEY) {
-		        
-			    var text = $input.val().trim();
-			    if (text) this.createModel($input, text);
-			    $input.val('').hide();
-			    
-			}
-		},
-		
-		getModelAttributes: function(text, pos) {
-		    
-			return {
-			    wall: WALL_URL,
-			    text: text,
-			    x:    pos.left / app.factor,
-			    y:    pos.top  / app.factor
-			};
-		    
-		},
-		
-		createModel: function($input, text) {
-		    
-			var coll = ($input == this.input) ? app.Marks : app.Waypoints;
-			var attributes = this.getModelAttributes( text, $input.offset() );
-			
-			coll.create(attributes, { success: this.createEmptyUndo });
-		},
-		
-		createEmptyUndo: function(model) {
-			                              // Create a blank undo so object
-			app.Undos.create({            // creation can be undone / redone.
-			    
-			    wall:   WALL_URL,
-                type:   model.type,
-			    obj_pk: model.get('id'),
-			    text:   "",
-			    x:      0,
-			    y:      0
-			    
-			});
-			
-			app.dispatcher.trigger('clear:redos');
-		},
-		
-		undoMarker: function(type) {
-		    
-            app.Undos.create({
-                wall: WALL_URL,
-                type: type     // 'group_end' or 'group_start'
-            });
-        },
-		
 		
 		
 		

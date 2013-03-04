@@ -11,6 +11,25 @@ body {
     background-size:10% 10%;
 }
 
+#loading {
+    position:fixed;
+    width:300px;
+    height:100px;
+    top:50%;
+    left:50%;
+    margin-left:-150px;
+    text-align:center;
+    font-size:32px;
+    z-index:0;
+    
+    background-color:#111111;
+    color:transparent;
+    text-shadow:0px 1px 1px rgba(255,255,255,0.5);
+    -webkit-background-clip:text;
+    -moz-background-clip:text;
+    background-clip:text;
+}
+
 .input {
     position:absolute;
     display:none;

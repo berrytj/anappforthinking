@@ -16,8 +16,6 @@ var WP_FONT_SIZE = 16;
 		// Cache the template function for a single waypoint.
 		template: _.template( $('#waypoint-template').html() ),
 		
-		events: _.defaults({ 'click': 'toggleSelected' }, app.ObjectView.prototype.events),
-		
 		initialize: function() {
 		    
 		    app.ObjectView.prototype.initialize.call(this);  // Call super.
@@ -57,11 +55,10 @@ var WP_FONT_SIZE = 16;
 			    return view;
 		},
 		
-		respondToClick: function() {},
 		shrinkwrap: function() {},
 		zoomSize: function() {},  // Don't change waypoint size when zooming. May change.
 		
-		toggleSelected: function(e) {
+		respondToClick: function(e) {
 		    
 		    if (e.shiftKey || e.metaKey || e.ctrlKey) {
 		        this.$el.toggleClass('ui-selected');
