@@ -35,7 +35,7 @@ $(function() {
         },
         
         selecting: function(e, ui) {
-            $(ui.selecting).find('circle').css('stroke', 'orange');
+            $(ui.selecting).find('circle').css('stroke', SELECTED_STROKE_COLOR);
         },
         
         unselecting: function(e, ui) {

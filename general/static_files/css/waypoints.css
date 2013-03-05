@@ -38,10 +38,6 @@ svg {
     z-index:1;
 }
 
-.svg-selected {
-    stroke:orange;
-}
-
 #wp-input {
 	cursor:text;
 	resize:none;

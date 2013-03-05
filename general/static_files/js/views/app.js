@@ -21,15 +21,15 @@ var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
 var MAX_FACTOR = 160;
 
-var INPUT_OFFSET_X = 7;
+var INPUT_OFFSET_X = 10;
 var INPUT_OFFSET_Y = 4;
-var SPACING = 6;
+var SPACING = 2;
 
 var WAIT_FOR_PASTE = 100;
 var LIST_PAUSE = 1500;
 var LIST_ANIMATE = 150;
 var WAIT_FOR_DRAG = 130;
-var INPUT_FADE = 100;
+var INPUT_FADE = 0;
 var LOADING_FADE = 350;
 var TIME = 0;  // Go slower if you can make font size animation less choppy.
 var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
@@ -41,6 +41,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 var WP_PADDING = 6;
 var CIRCLE_WIDTH = 84;
 var STROKE_COLOR = '#AAAAAA';
+var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 (function() {
     

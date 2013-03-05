@@ -41,8 +41,8 @@ body {
     position:absolute;
     display:none;
     
-    padding:1px 5px 5px 5px;
-    margin:-2px 0px 0px -6px;
+    padding:3px 7px 5px 6px;
+    margin:-3px 0px 0px -6px;
 	
   	height:auto;
   	overflow:hidden;
@@ -51,22 +51,23 @@ body {
     font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Arial, sans-serif;
     font-weight:300;
     line-height:140%;
-/*  opacity:0.85; */
     color:#3d3d3d;
-    background-color:rgba(0,0,0,0.025);
+    background-color:rgba(0,0,0,0.035);
 	
   	z-index:10000;
 }
 
 .input:focus {
-    box-shadow:none;
-    border:inset 3px rgba(229,210,167,0.85);
+    box-shadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
+    border:none;
+/*    border:1px dashed rgba(222,170,29,1);*/
+    background-image: url('../images/5.jpg');
 }
 
 #input {
     /* To avoid jump after initial creation. */
-    padding-left:4px;
-    padding-top:2px;
+    padding-top:4px;
+    padding-left:8px;
 }
 
 .mark {
@@ -75,10 +76,9 @@ body {
     z-index:10;
     
     width:370px;
-    padding:3px 5px;
-    border-radius:2px;
-    
     line-height:0px;
+    
+    border:1px solid rgba(0,0,0,0);
 }
 
 label {
@@ -128,7 +128,8 @@ button {
 }
 
 .mark.ui-selecting, .mark.ui-selected {
-    box-shadow:0px 0px 3px 1px orange;
+/*    box-shadow:0px 0px 3px 1px rgba(232,191,79,0.8);*/
+    border:1px dashed rgba(222,170,29,1);
 }
 
 .ui-state-disabled {

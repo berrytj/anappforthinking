@@ -6,13 +6,15 @@ var X_FACTOR = 1.3;
 var TOP_INDEX = 9995;  // Toolbar is a z-index 9999.
 var BOTTOM_INDEX = 10;
 var ORIG_FONT_SIZE = 14;
-var ORIG_X_PADDING = 5;
-var ORIG_Y_PADDING = 3;
+var ORIG_LEFT_PADDING = 7;
+var ORIG_RIGHT_PADDING = 7;
+var ORIG_TOP_PADDING = 3;
+var ORIG_BOTTOM_PADDING = 5;
 var MARK_WIDTH = 370;
-var OUTER_MARK_WIDTH = 370 + ORIG_X_PADDING * 2;
+var OUTER_MARK_WIDTH = 370 + ORIG_LEFT_PADDING + ORIG_RIGHT_PADDING;
 var MARK_HEIGHT = 38;
 var SINGLE_ROW_HEIGHT = 25;
-var ORIG_RADIUS = 2;
+var ORIG_RADIUS = 6;
 var NARROW = 0.8;
 
 (function() {
@@ -44,8 +46,10 @@ var NARROW = 0.8;
 		    var mark = {};
 		    mark['border-radius'] = app.factor * ORIG_RADIUS + 'px';
 		    mark['width'] = app.factor * MARK_WIDTH;
-		    mark['padding-left'] = mark['padding-right'] = app.factor * ORIG_X_PADDING + 'px';
-		    mark['padding-top'] = mark['padding-bottom'] = app.factor * ORIG_Y_PADDING + 'px';
+		    mark['padding-left'] = app.factor * ORIG_LEFT_PADDING + 'px';
+		    mark['padding-right'] = app.factor * ORIG_RIGHT_PADDING + 'px';
+		    mark['padding-top'] = app.factor * ORIG_TOP_PADDING + 'px';
+		    mark['padding-bottom'] = app.factor * ORIG_BOTTOM_PADDING + 'px';
 		    
 		    this.$el.css(mark);
 		    this.$('label').css({ 'font-size': app.factor * ORIG_FONT_SIZE + 'px' });
@@ -93,6 +97,8 @@ var NARROW = 0.8;
 		
 		showInput: function(width, height) {
 		    
+		    this.$('label').fadeOut(INPUT_FADE);
+		    
 		    this.$('.input').css({ 'font-size': app.factor * ORIG_FONT_SIZE })
 		                    .val(this.model.get('text'))
 		                    .width(width)
@@ -115,6 +121,7 @@ var NARROW = 0.8;
 			        this.saveEdit(text);
 			        
 			        var that = this;
+			        this.$('label').fadeIn(INPUT_FADE);
 			        $input.fadeOut(INPUT_FADE, function() {
 			            that.$el.css('z-index', BOTTOM_INDEX);
 			        });
