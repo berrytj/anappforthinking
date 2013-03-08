@@ -55,13 +55,18 @@ body {
     background-color:rgba(0,0,0,0.035);
 	
   	z-index:10000;
+
+    box-shadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
+    border:none;
+    background-image: url('../images/5.jpg');
+    opacity:0.93;
+/*    border:1px dashed rgba(222,170,29,1);*/
 }
 
 .input:focus {
     box-shadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
     border:none;
 /*    border:1px dashed rgba(222,170,29,1);*/
-    background-image: url('../images/5.jpg');
 }
 
 #input {
