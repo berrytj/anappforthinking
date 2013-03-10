@@ -7,8 +7,8 @@ body {
 
 #wall {
     position:absolute;
-    width:5000px;
-    height:2000px;
+    width:7200px;
+    height:3800px;
     background-image: url('../images/4.jpg');
     background-size:10% 10%;
 }
@@ -58,6 +58,8 @@ body {
 
     box-shadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
     border:none;
+    /* use same size as background and say 30% 200%?
+    or otherwise coordinate so text matches */
     background-image: url('../images/5.jpg');
     opacity:0.93;
 /*    border:1px dashed rgba(222,170,29,1);*/
