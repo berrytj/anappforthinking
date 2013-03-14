@@ -1,3 +1,10 @@
+
+
+
+/*           WAYPOINTS           */
+/*********************************/
+
+
 .waypoint {
 	cursor:default;
 	position:absolute;
@@ -12,14 +19,26 @@
 .waypoint-text {
     position:absolute;
     margin-top:32px;
-    margin-left:-58px;
     z-index:2;
-    text-align:center;
-    width:200px;
+	white-space: nowrap;
+}
+
+#wp-input > textarea {
+	padding:0;
+	width:200%;
+	left:-50%;
+	text-align:center;
+	font-size:16px;
+	font-weight:bold;
+	box-shadow:none;
+	border:none;
+	resize:none;
+	border-radius:0px;
+	/* show caret! */
 }
 
 @media screen and (-webkit-min-device-pixel-ratio:0) {
-  .waypoint-text {
+  .waypoint-text, #wp-input > textarea {
       background-color:#111111;
       color:transparent;
       text-shadow:0px 1px 1px rgba(255,255,255,0.7);
@@ -29,28 +48,16 @@
   }
 }
 
-.waypoint-cont {
-    display:inline;
-}
-
 svg {
     position:absolute;
     z-index:1;
 }
 
-#wp-input {
-	cursor:text;
-	resize:none;
-	overflow:hidden;
-	border-width:0px;
-	background-color:transparent;
-	outline:none;
-	-webkit-appearance:none;
-	box-shadow: none;
-	-moz-box-shadow: none;
-	-webkit-box-shadow: none;
-	z-index:10000;
-}
+
+
+/*           WAYPOINT TAGS           */
+/*************************************/
+
 
 #waypoint-tags {
 	position:fixed;
@@ -59,6 +66,11 @@ svg {
 	max-width:90%;
 	height:35px;
 	z-index:10000;
+}
+
+.ui-sortable-placeholder {
+	display:inline-block;
+	margin-top:-10px;
 }
 
 #hide-tags {

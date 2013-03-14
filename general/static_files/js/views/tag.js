@@ -5,24 +5,25 @@ var app = app || {};
 var WP_SCROLL_TIME = 1000;
 
 (function() {
-    
-    'use strict';
-    
+	
+	'use strict';
+	
 	app.TagView = Backbone.View.extend({
-	    
-	    tagName: 'span',
-	    className: 'waypoint-tag',
-        
+		
+		tagName: 'span',
+		className: 'waypoint-tag',
+		
 		// The DOM events specific to an item.
 		events: {
-		    'click': 'moveToWaypoint',
+			'click': 'moveToWaypoint',
 		},
 		
 		initialize: function(options) {
-		    
-            this.waypoint = options.waypoint;
-		    this.text = options.text;
-		    
+			
+			this.waypoint = options.waypoint;
+			this.text = options.text;
+			this.el.id = 'tag_' + this.waypoint.model.get('id');
+			
 		},
 		
 		render: function() {
@@ -31,19 +32,19 @@ var WP_SCROLL_TIME = 1000;
 		},
 		
 		moveToWaypoint: function() {
-            
-            var wp = this.waypoint;
-	        
-	        var left = wp.model.get('x') * app.factor - $(window).width() / 2 + WP_WIDTH / 2;
-	        var top  = wp.model.get('y') * app.factor - $(window).height() * WP_Y_FACTOR;
-	        
-	        $('html, body').animate({
-	            
-	            scrollLeft: left,
-	            scrollTop:  top
-	            
-	        }, WP_SCROLL_TIME);
-	        
+			
+			var wp = this.waypoint;
+			
+			var left = wp.model.get('x') * app.factor - $(window).width() / 2 + WP_WIDTH / 2;
+			var top  = wp.model.get('y') * app.factor - $(window).height() * WP_Y_FACTOR;
+			
+			$('html, body').animate({
+				
+				scrollLeft: left,
+				scrollTop:  top
+				
+			}, WP_SCROLL_TIME);
+			
 		},
 				
 	});

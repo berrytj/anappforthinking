@@ -13,13 +13,13 @@ var app = app || {};
 	    
 		// The DOM events specific to an item.
 		events: {
-		    'click':           'doNothing',
-		    'click #zoom-in':      'zoomIn',
-		    'click #zoom-out':     'zoomOut',
-		    'click #undo-button':  'undo',
-		    'click #redo-button':  'redo',
-		    'click #list-button':  'list',
-		    'click #paste-button': 'paste',
+		    'click':            'doNothing',
+		    'click #zoom-in':   'zoomIn',
+		    'click #zoom-out':  'zoomOut',
+		    'click #undo-btn':  'undo',
+		    'click #redo-btn':  'redo',
+		    'click #list-btn':  'list',
+		    'click #paste-btn': 'paste',
 		},
 		
 		initialize: function() {
@@ -43,15 +43,15 @@ var app = app || {};
 		fade: function(name) {
 		    
 		    if (name === 'undo') {
-		        this.$('#undo-button').addClass('button-disabled');
+		        this.$('#undo-btn').addClass('btn-disabled');
 		    } else if (name === 'redo') {
-		        this.$('#redo-button').addClass('button-disabled')
+		        this.$('#redo-btn').addClass('btn-disabled')
 		    }
 		    
 		},
 		
 		fadeRedo: function() {
-		    this.$('#redo-button').addClass('button-disabled');
+		    this.$('#redo-btn').addClass('btn-disabled');
 		},
 		
 		zoomIn:      function() { app.dispatcher.trigger('zoom', ZOOM_IN_FACTOR);  },
@@ -78,16 +78,16 @@ var app = app || {};
 		    
 		    this.undoEnabled = false;
 		    this.$('#saving').text('saving...');
-		    this.$('#undo-button').addClass('button-disabled');
-		    this.$('#redo-button').addClass('button-disabled');
+		    this.$('#undo-btn').addClass('btn-disabled');
+		    this.$('#redo-btn').addClass('btn-disabled');
 		},
 		
 		saved: function() {
 		    
 		    this.undoEnabled = true;
 		    this.$('#saving').text('saved');
-		    if (app.Undos.length) this.$('#undo-button').removeClass('button-disabled');
-		    if (app.Redos.length) this.$('#redo-button').removeClass('button-disabled');
+		    if (app.Undos.length) this.$('#undo-btn').removeClass('btn-disabled');
+		    if (app.Redos.length) this.$('#redo-btn').removeClass('btn-disabled');
 		},
 		
 		disableList: function() {
@@ -99,15 +99,15 @@ var app = app || {};
 		    this.listEnabled = enabled;
 		    
 		    if (enabled) {
-		        this.$('#list-button').removeClass('button-disabled');
+		        this.$('#list-btn').removeClass('btn-disabled');
 		    } else {
-		        this.$('#list-button').addClass('button-disabled');
+		        this.$('#list-btn').addClass('btn-disabled');
 		    }
 		    
 		},
 		
 		enablePaste: function() {
-		    this.$('#paste-button').removeClass('button-disabled');
+		    this.$('#paste-btn').removeClass('btn-disabled');
 		},
         	
 		doNothing: function(e) { e.stopPropagation(); },

@@ -7,4 +7,5 @@ urlpatterns = patterns('',
     url(r'^$', 'walls.views.index', name='index'),
     url(r'^(?P<pk>\d+)/$', 'walls.views.wall'),
     url(r'^newWall/$', 'walls.views.newWall'),
+    url(r'^sortTags/$', 'walls.views.sortTags'),
 )

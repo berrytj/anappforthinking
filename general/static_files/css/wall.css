@@ -10,7 +10,7 @@ body {
     width:7200px;
     height:3800px;
     background-image: url('../images/4.jpg');
-    background-size:10% 10%;
+    background-size:6% 6%;
 }
 
 #loading {
@@ -40,10 +40,8 @@ body {
 .input {
     position:absolute;
     display:none;
-    
     padding:3px 7px 5px 6px;
     margin:-3px 0px 0px -6px;
-	
   	height:auto;
   	overflow:hidden;
   	resize:none;
@@ -52,17 +50,11 @@ body {
     font-weight:300;
     line-height:140%;
     color:#3d3d3d;
-    background-color:rgba(0,0,0,0.035);
-	
-  	z-index:10000;
-
     box-shadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
     border:none;
-    /* use same size as background and say 30% 200%?
-    or otherwise coordinate so text matches */
     background-image: url('../images/5.jpg');
     opacity:0.93;
-/*    border:1px dashed rgba(222,170,29,1);*/
+    z-index:9990;
 }
 
 .input:focus {

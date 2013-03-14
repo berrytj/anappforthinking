@@ -1,54 +1,50 @@
 {% extends "base.html" %}
 {% block title %}settings{% endblock %}
+
 {% block body %}
 
-<div class="container-fluid">
+<div class="status">
 
-<div class="row-fluid status">
-  <div class="span6 offset3">
-    {% if status == 'cp' %}
-        <p>Your password has been changed.</p>
-    {% else %}{% if status == 'ce' %}
-        <p>Check your email for a verification link.</p>
-    {% endif %}{% endif %}
-  </div>
-</div>
-
-<div class="row-fluid">
-    <div class="span2 offset4">
-        <form action="" method="post" id="email_change_form">
-            {% csrf_token %}
-            <fieldset>
-                <legend>Change Email</legend>
-                {{ email_form.as_p }}
-            </fieldset>
-            <input type="submit" name="em" value="Change email" class="blue-button" />
-        </form>
-    </div>
-    <div class="span2">
-        <form action="" method="post" id="password_change_form">
-            {% csrf_token %}
-            <fieldset>
-                <legend>Change Password</legend>
-                {{ pass_form.as_p }}
-            </fieldset>
-            <input type="submit" name="pass" value="Change password" class="blue-button" />
-        </form>
-    </div>
-</div>
-
-<div class="row-fluid">
-    <div id="back-from-settings" class="span2 offset5">
-        <a href="/">&larr;</a>
-    </div>
-</div>
-
-<div class="row-fluid footer">
-  <div class="span2 offset5">
-        <a href="{% url userena.views.signout %}">log out</a>
-  </div>
-</div>
+	{% if status == 'cp' %}
+		<p>Your password has been changed.</p>
+	{% else %}{% if status == 'ce' %}
+		<p>Check your email for a verification link.</p>
+	{% endif %}{% endif %}
 
 </div>
-    
+
+
+<form action="" method="post" id="email_change_form">{% csrf_token %}
+
+	<fieldset>
+
+		<legend>Change Email</legend>
+		{{ email_form.as_p }}
+
+	</fieldset>
+
+	<input type="submit" name="em" value="Change email" class="blue-button" />
+
+</form>
+
+
+<form action="" method="post" id="password_change_form">{% csrf_token %}
+
+	<fieldset>
+
+		<legend>Change Password</legend>
+		{{ pass_form.as_p }}
+
+	</fieldset>
+
+	<input type="submit" name="pass" value="Change password" class="blue-button" />
+
+</form>
+
+
+<div id="back-from-settings">
+	<a href="/">&larr;</a>
+</div>
+
+	
 {% endblock %}

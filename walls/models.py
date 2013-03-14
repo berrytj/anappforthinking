@@ -75,3 +75,18 @@ class Redo(models.Model):
     class Meta:
         ordering = ['-pk']
         get_latest_by = "pk"
+
+class TagOrder(models.Model):
+    '''An stringified array specifying the order of the user's waypoint tags.'''
+
+    wall = models.OneToOneField(Wall)
+    text = models.CharField(max_length=10000, default="", blank=True)
+
+
+
+
+
+
+
+
+

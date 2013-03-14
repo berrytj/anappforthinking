@@ -39,6 +39,17 @@ var NARROW = 0.8;
 		initialize: function() {
 		    app.ObjectView.prototype.initialize.call(this);
 		    app.dispatcher.on('click:wall', this.closeInput, this);
+		    
+		    var that = this;
+		    setTimeout(function() { that.savePosition(); }, 1);  // $el location doesn't register until current execution completes
+		},
+
+		savePosition: function() {
+
+			var pos = this.$el.offset();
+			var height = this.$el.outerHeight();
+			app.dispatcher.trigger('save:position', pos.left, pos.top + height);
+			
 		},
 		
 		zoomSize: function() {
