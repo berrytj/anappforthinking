@@ -92,8 +92,11 @@
 		var wall_id  = "{{ wall.id }}";
 	</script>
 	
-	<audio src='../../sounds/error.wav' id='error-sound' />
 	
+	<audio preload='auto' id='error-sound'>
+		<source src='{{STATIC_URL}}sounds/error.wav' type='audio/wav'>
+	</audio>
+
 {% endblock %}
 {% block scripts %}
 

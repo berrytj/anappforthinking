@@ -766,7 +766,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		// because using ambiguous names made the functions much less clear/readable.
 		
 		undo: function(isRedo) {
-			console.log('hey');
+			
 			var Undos = app.Undos, Redos = app.Redos;
 
 			if (isRedo) Undos = app.Redos, Redos = app.Undos;
@@ -889,7 +889,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				this.recenterWindow(rel_factor);
 				
 			} else {
-				//playsound
+				$('#error-sound').get()[0].play();
 			}
 			
 		},
