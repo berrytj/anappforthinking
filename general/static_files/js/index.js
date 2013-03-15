@@ -5,6 +5,7 @@ var index = {
 	FORM_FADE:     200,
 	WAIT_FOR_MOVE: 800,
 	WAIT_FOR_OPEN: 100,
+	PLUS_FADE:     50,
 };
 
 var closeDialog = function($dialog) {
@@ -78,6 +79,7 @@ $(function() {
 	$('#add-wall').click(function(e) {
 
 		$(this).remove();
+		// set guide text / style if first wall?
 		$('#new-wall-form').fadeIn(index.FORM_FADE, function() { hideCursor(); });
 
 	});
@@ -105,5 +107,9 @@ $(function() {
 		position:  { my: 'center bottom', at: 'center' },
 		
 	});
+
+	!$('.wall-name').length ? $('#add-wall').click() : $('#add-wall').show();
+
 	
 });
+

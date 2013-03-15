@@ -4,9 +4,9 @@
 
 	{% block meta %}{% endblock %}
 
-	<link rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico" />
+	<link rel="shortcut icon" href="{{STATIC_URL}}images/favicon.ico" />
+	<link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="{{STATIC_URL}}lib/jquery-ui/jquery-ui.min.css" rel="stylesheet">
-	<link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="{{STATIC_URL}}css/base.css" rel="stylesheet">
 
 	{% block style %}{% endblock %}
@@ -16,29 +16,17 @@
 </head>
 
 <body>
-	{% block body %}
 
-		<div class="content_title">
-			{% block content_title %}{% endblock %}
-		</div>
-		<div class="content">
-			{% block content %}{% endblock %}
-		</div>
-
-	{% endblock %}
+	{% block body %}{% endblock %}
 	
-	<script src="{{ STATIC_URL }}lib/jquery.min.js"></script>
-	<script src="{{ STATIC_URL }}lib/csrf-protection.js"></script>
-	<script src="{{ STATIC_URL }}lib/lodash.min.js"></script>
-	<script src="{{ STATIC_URL }}lib/jquery-ui/jquery-ui.min.js"> <!-- Customized: CTRL+F 'added by Tom' -->
-	<script src="{{ STATIC_URL }}lib/bootstrap/js/bootstrap.min.js"></script>
-	<script src="{{ STATIC_URL }}lib/underscore.js"></script>
-	<script src="{{ STATIC_URL }}lib/backbone.js"></script>
-	<script src="{{ STATIC_URL }}lib/jquery.autosize.js"></script>
-	<script src="{{ STATIC_URL }}lib/jquery.bez.min.js"></script>
+	<script src="{{STATIC_URL}}lib/jquery.min.js"></script>
+	<script src="{{STATIC_URL}}lib/lodash.min.js"></script>
+	<script src="{{STATIC_URL}}lib/backbone-min.js"></script>
+	<script src="{{STATIC_URL}}lib/jquery-ui/jquery-ui.min.js"></script> <!-- Customized: CTRL+F 'added by Tom' -->
+	<script src="{{STATIC_URL}}lib/jquery.autosize.js"></script>
+	<script src="{{STATIC_URL}}lib/csrf-protection.js"></script>
 	
-	{% block scripts %}
-	{% endblock %}
+	{% block scripts %}{% endblock %}
 	
 </body>
 </html>
