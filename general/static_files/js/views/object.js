@@ -66,6 +66,18 @@ var app = app || {};
 
 			$el.appendTo('#wall')
 			   .removeClass('ui-draggable-dragging dragged dropped');
+
+/*			this.zoomSize();
+			this.shrinkwrap();
+			
+			var pos = this.$el.offset();
+			
+			this.$el.animate({
+				
+				left: pos.left * rel_factor,
+				top:  pos.top  * rel_factor
+				
+			}, ANIM_OPTS);*/
 			
 			if ($el.hasClass('ui-draggable')) $el.draggable('destroy');
 			
@@ -74,6 +86,8 @@ var app = app || {};
 
 		zoom: function(rel_factor) {
 			
+			if (this.model.get('text') === '') return;
+
 			this.zoomSize();
 			this.shrinkwrap();
 			

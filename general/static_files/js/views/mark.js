@@ -16,6 +16,8 @@ var MARK_HEIGHT = 38;
 var SINGLE_ROW_HEIGHT = 25;
 var ORIG_RADIUS = 6;
 var NARROW = 0.8;
+var MAX_BOLD = 0.7;
+var MAX_NORMAL = 1;
 
 (function() {
 	
@@ -46,16 +48,27 @@ var NARROW = 0.8;
 		
 		zoomSize: function() {
 			
-			var mark = {};
-			mark['border-radius'] = app.factor * ORIG_RADIUS + 'px';
-			mark['width'] = app.factor * MARK_WIDTH;
-			mark['padding-left'] = app.factor * ORIG_LEFT_PADDING + 'px';
-			mark['padding-right'] = app.factor * ORIG_RIGHT_PADDING + 'px';
-			mark['padding-top'] = app.factor * ORIG_TOP_PADDING + 'px';
-			mark['padding-bottom'] = app.factor * ORIG_BOTTOM_PADDING + 'px';
+			var style = {
+				'border-radius':  app.factor * ORIG_RADIUS + 'px',
+				'width':          app.factor * MARK_WIDTH + 'px',
+				'padding-left':   app.factor * ORIG_LEFT_PADDING + 'px',
+				'padding-right':  app.factor * ORIG_RIGHT_PADDING + 'px',
+				'padding-top':    app.factor * ORIG_TOP_PADDING + 'px',
+				'padding-bottom': app.factor * ORIG_BOTTOM_PADDING + 'px',
+			};
 			
-			this.$el.css(mark);
-			this.$('label').css({ 'font-size': app.factor * ORIG_FONT_SIZE + 'px' });
+			var weight;
+
+			if      (app.factor < MAX_BOLD)   weight = 500;
+			else if (app.factor < MAX_NORMAL) weight = 400;
+			else                              weight = 300;
+
+			this.$el.css(style);
+			
+			this.$('label').css({
+				'font-size': app.factor * ORIG_FONT_SIZE + 'px',
+				'font-weight': weight,
+			});
 			
 			this.shrinkwrap();
 		},

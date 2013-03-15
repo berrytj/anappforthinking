@@ -19,7 +19,7 @@ var WALL_URL = API_NAME + "/wall/" + wall_id + "/";
 
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
-var MAX_FACTOR = 160;
+var MAX_FACTOR = 12;
 
 var INPUT_OFFSET_X = 10;
 var INPUT_OFFSET_Y = 4;
