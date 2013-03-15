@@ -36,7 +36,25 @@ var addToQueue = function() {
 	});
 	
 	app.queue.done(function() {
-		if (app.queue.state() === 'resolved') app.dispatcher.trigger('saved');
+		
+		if (app.disconnected) {
+
+			//resave everything
+			app.disconnected = false;
+
+		} else if (app.queue.state() === 'resolved') {
+			app.dispatcher.trigger('saved');
+		}
+
+	});
+
+	app.queue.fail(function() {
+
+		if (!app.disconnected) {
+			app.disconnected = true;
+			alert('Connection lost.  Please refresh the browser.');
+		}
+
 	});
 
 };

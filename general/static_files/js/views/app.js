@@ -94,6 +94,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 			app.factor = 1;        // Keep track of zoom factor.
 			app.dragging = false;  // To distinguish between click and drags.
+			app.disconnected = false;
 			app.queue = $.Deferred();
 			app.queue.resolve();
 			
