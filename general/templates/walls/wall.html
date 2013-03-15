@@ -50,7 +50,7 @@
 			<textarea class='waypoint-text' maxlength='22' spellcheck='false' rows='1'></textarea>
 		
 			<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="84px" height="84px">
-				<circle cx="42" cy="42" r="40" stroke="#AAAAAA" stroke-width="1.1" fill="transparent" />
+				<circle cx="42" cy="42" r="40" stroke="#DDDCCC" stroke-width="1.1" fill="transparent" />
 			</svg>
 
 		</div>
@@ -61,7 +61,7 @@
 	<div id='trash-can' class='trash-can'></div>
 	
 
-	<div id='waypoint-tags'>
+	<div id='waypoint-tags' style='display:none;'>
 		<span id='sortable-tags'></span>
 		<span id='add-waypoint' class='waypoint-tag'> + </span>
 		<span id='hide-tags'>&laquo;</span>
@@ -81,16 +81,18 @@
 		</div>
 		
 		<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="84px" height="84px">
-			<circle cx="42" cy="42" r="40" stroke="#AAAAAA" stroke-width="1.1" fill="transparent" />
+			<circle cx="42" cy="42" r="40" stroke="#BBBBBB" stroke-width="1.1" fill="transparent" />
 		</svg>
 		
 	</script>
-	
-	
+
+
 	<script>
 		var username = "{{ username }}";
 		var wall_id  = "{{ wall.id }}";
 	</script>
+	
+	<audio src='../../sounds/error.wav' id='error-sound' />
 	
 {% endblock %}
 {% block scripts %}

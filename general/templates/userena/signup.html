@@ -2,28 +2,41 @@
 {% block title %}Sign Up{% endblock %}
 
 {% block forms %}
+
     <form id="signup-form" action="" method="post">
         {% csrf_token %}
         <fieldset>
+
             <legend>Sign Up
                 <span class="or-login">
                     <a href="/login/">or login</a>
                 </span>
             </legend>
+
             {{ form.non_field_errors }}
+
             {% for field in form %}
+
                 {{ field.errors }}
+
                 {% if field.name == 'tos' %}
+
                     <p class="checkbox">
                         <label for="id_{{ field.name }}">
                             {{ field }} {{ field.label }}
                         </label>
                     </p>
+
                 {% else %}
                     <p>{{ field.label_tag }}{{ field }}</p>
                 {% endif %}
+
             {% endfor %}
+
         </fieldset>
-        <input class="blue-button" type="submit" value="Sign Up" />
-    </form>    
+
+        <input class="button" type="submit" value="Sign Up" />
+        
+    </form>
+
 {% endblock %}

@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 	{% block meta %}{% endblock %}
+
 	<link rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico" />
-    <link href="{{STATIC_URL}}lib/jquery-ui/jquery-ui.min.css" rel="stylesheet">
-    <link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.css" rel="stylesheet">
-    <link href="{{STATIC_URL}}css/base.css" rel="stylesheet">
-    {% block style %}{% endblock %}
-    
-    <title>thinkingapp » {% block title %}{% endblock %}</title>
+	<link href="{{STATIC_URL}}lib/jquery-ui/jquery-ui.min.css" rel="stylesheet">
+	<link href="{{STATIC_URL}}lib/bootstrap/css/bootstrap.css" rel="stylesheet">
+	<link href="{{STATIC_URL}}css/base.css" rel="stylesheet">
+
+	{% block style %}{% endblock %}
+	
+	<title>thinkingapp » {% block title %}{% endblock %}</title>
+
 </head>
+
 <body>
-    {% block body %}
+	{% block body %}
 
-        <div class="content_title">
-            {% block content_title %}{% endblock %}
-        </div>
-        <div class="content">
-            {% block content %}{% endblock %}
-        </div>
+		<div class="content_title">
+			{% block content_title %}{% endblock %}
+		</div>
+		<div class="content">
+			{% block content %}{% endblock %}
+		</div>
 
-    {% endblock %}
-    
-    <script src="{{ STATIC_URL }}lib/jquery.min.js"></script>
-    <script src="{{ STATIC_URL }}lib/csrf-protection.js"></script>
-    <script src="{{ STATIC_URL }}lib/lodash.min.js"></script>
-    <script src="{{ STATIC_URL }}lib/jquery-ui/jquery-ui.min.js"> <!-- Customized: CTRL+F 'added by Tom' -->
+	{% endblock %}
+	
+	<script src="{{ STATIC_URL }}lib/jquery.min.js"></script>
+	<script src="{{ STATIC_URL }}lib/csrf-protection.js"></script>
+	<script src="{{ STATIC_URL }}lib/lodash.min.js"></script>
+	<script src="{{ STATIC_URL }}lib/jquery-ui/jquery-ui.min.js"> <!-- Customized: CTRL+F 'added by Tom' -->
 	<script src="{{ STATIC_URL }}lib/bootstrap/js/bootstrap.min.js"></script>
 	<script src="{{ STATIC_URL }}lib/underscore.js"></script>
 	<script src="{{ STATIC_URL }}lib/backbone.js"></script>
-    <script src="{{ STATIC_URL }}lib/jquery.autosize.js"></script>
-    <script src="{{ STATIC_URL }}lib/jquery.bez.min.js"></script>
+	<script src="{{ STATIC_URL }}lib/jquery.autosize.js"></script>
+	<script src="{{ STATIC_URL }}lib/jquery.bez.min.js"></script>
 	
 	{% block scripts %}
 	{% endblock %}

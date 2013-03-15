@@ -50,7 +50,15 @@ var WP_FONT_SIZE = 16;
 		},
 		
 		respondToClick: function(e) {
-			if (e.shiftKey || e.metaKey || e.ctrlKey) this.$el.toggleClass('ui-selected');
+
+			if (e.shiftKey || e.metaKey || e.ctrlKey) {
+
+				var color = this.$el.hasClass('ui-selected') ? STROKE_COLOR : SELECTED_STROKE_COLOR;
+				
+				this.$el.toggleClass('ui-selected').find('circle').css('stroke', color);
+
+			}
+
 		},
 
 		shrinkwrap: function() {

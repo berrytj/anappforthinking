@@ -5,7 +5,7 @@ var app = app || {};
 // --------------
 
 $(function() {
-		
+
 	new app.AppView();  // Initialize the app!
 
 	$('#trash-can').droppable({  // Not substantial enough to have its own view.

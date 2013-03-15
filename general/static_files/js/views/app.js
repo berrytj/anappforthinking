@@ -42,7 +42,7 @@ var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity r
 
 var WP_PADDING = 6;
 var CIRCLE_WIDTH = 84;
-var STROKE_COLOR = '#AAAAAA';
+var STROKE_COLOR = '#BBBBBB';
 var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 (function() {
@@ -55,13 +55,12 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		
 		// Delegated events. Switch from mousedown to click for showing input?
 		events: {
-			'click'              : 'toggleInput',
-			'click #input'       : 'doNothing',
-			'click #trash-can'   : 'doNothing',
-			'keydown'            : 'toggleOrZoom',
-			'mouseup'            : 'resetDragging', //move into toggle input?
+			'click'            : 'toggleInput',
+			'keydown'          : 'toggleOrZoom',
+			'mouseup'          : 'resetDragging', //move into toggle input? //is this still being used?
+			'click #input'     : 'doNothing',
+			'click #trash-can' : 'doNothing',
 		},
-		
 		
 		
 	  //////////////////////////////
@@ -70,7 +69,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		
 		
 		initialize: function() {
-			
+
 			this.setViewVariables();
 			this.setAppVariables();
 			this.listen();
@@ -102,12 +101,16 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		
 		populateObjects: function() {
 			
-			var callback = _.after(2, this.hideLoading, this);
-			
-			var options = _.extend(FETCH_OPTS, { success: callback });
-			
-			app.Marks.fetch(options);
-			app.Waypoints.fetch(options);
+			var doneLoading = _.after(2, this.doneLoading, this);
+
+			app.Marks.fetch( _.extend(FETCH_OPTS, { success: doneLoading }) );
+
+			app.Waypoints.fetch( _.extend(FETCH_OPTS, { success: function() {
+
+				doneLoading();
+				app.dispatcher.trigger('sort:tags');
+
+			} }) );
 			
 		},
 		
@@ -124,7 +127,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
-		hideLoading: function() {
+		doneLoading: function() {
 			this.$('#loading').fadeOut(LOADING_FADE);
 		},
 		
@@ -145,8 +148,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			d.on('clear:redos',    this.clearRedos,       this);
 			d.on('clear:selected', this.clearSelected,    this);
 			d.on('undoMarker',     this.undoMarker,       this);
-			d.on('click:wall',     this.hideInputs,       this);
-			d.on('save:position',  this.saveNextPosition, this);
+			d.on('close:inputs',   this.hideInputs,       this);
 		},
 		
 		listenToCollection: function(coll) {
@@ -158,13 +160,6 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			});
 			
 			coll.on('reset', this.renderCollection, this);
-		},
-		
-		saveNextPosition: function(left, bottom) {
-
-			app.next_x = left / app.factor;
-			app.next_y = (bottom + SPACING) / app.factor;
-
 		},
 
 		createViewForModel: function(model) {
@@ -314,10 +309,14 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				
 				if ($('.input:visible').length) {  // If any mark is being edited:
 
-					app.dispatcher.trigger('click:wall', e);
+					// This triggers hideInputs() again -- probably not
+					// a performance concern, but I may replace with a 
+					// new event that triggers closure of just mark-bound inputs.
+					app.dispatcher.trigger('close:inputs', e);
 
 				} else if ($('.ui-selected').length) {  // If any marks are selected:
 
+					if (e.shiftKey || e.metaKey || e.ctrlKey) return;
 					app.dispatcher.trigger('clear:selected');
 
 				} else {
@@ -332,8 +331,10 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		clearSelected: function() {
 			
 			this.$('.ui-selected').each(function() {
+
 				$(this).removeClass('ui-selected');
 				$(this).find('circle').css('stroke', STROKE_COLOR);
+
 			});
 			
 		},
@@ -348,10 +349,10 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				top  = e.pageY - INPUT_OFFSET_Y;
 
 			} else {  // pressed enter
-				
-				left = app.next_x * app.factor;
-				if (!left) return;
-				top  = app.next_y * app.factor;
+
+				var obj = app.last_edited;
+				left = obj.model.get('x');
+				top = obj.model.get('y') + obj.$el.outerHeight() + SPACING / app.factor;
 				e.preventDefault();  // Don't return inside of new input field.
 
 			}
@@ -367,22 +368,43 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		makeSelectable: function() {
 
+			var that = this;
+
 			this.$('#wall').selectable({
 		
 				filter: '.mark, .waypoint:not(#wp-input)',
+
 				distance: SELECTABLE_DISTANCE,
 				
-				start: function(e) {
-					// Modified jquery-ui source to add-to-selection when holding shift.
-					// (Add-to-selection is default behavior when holding cmd / ctrl.)
+				start: function(e) {  // Modified jquery-ui source to add-to-selection when holding shift.
+									  // (Add-to-selection is default behavior when holding cmd / ctrl.)
+
 					app.dragging = true;  // To prevent input field from opening due to mousedown.
-					app.dispatcher.trigger('click:wall', e);
-					// Update to avoid triggering this when shift-selecting:
+					app.dispatcher.trigger('close:inputs', e);
+					
+					// ***Update to avoid triggering this when shift-selecting***:
 					app.dispatcher.trigger('enable:list', false);
+
+					that.scrollWhileSelecting();
+
+					if (e.shiftKey) that.$('.ui-selected').addClass('preselected');
 				},
 				
 				selecting: function(e, ui) {
-					$(ui.selecting).find('circle').css('stroke', SELECTED_STROKE_COLOR);
+					
+					var $obj = $(ui.selecting);
+
+					if ($obj.hasClass('preselected')) {
+
+						$obj.removeClass('ui-selecting');
+						$obj.find('circle').css('stroke', STROKE_COLOR);
+
+					} else {
+
+						$obj.find('circle').css('stroke', SELECTED_STROKE_COLOR);
+
+					}
+
 				},
 				
 				unselecting: function(e, ui) {
@@ -390,14 +412,47 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				},
 				
 				stop: function() {
+
+					$(window).unbind('mousemove');
+					$('.preselected').removeClass('preselected');
 					if ($('.ui-selected').length) app.dispatcher.trigger('enable:list', true);
+
 				},
 				
 			});
 
 		},
 		
-		
+		scrollWhileSelecting: function() {
+
+			$(window).mousemove(function(e) {
+
+				var sens = 10, speed = 20, $d = $(document);
+
+				if (e.pageY - $d.scrollTop() < sens) {
+
+					$d.scrollTop($d.scrollTop() - speed);
+
+				} else if ($(window).height() - (e.pageY - $d.scrollTop()) < sens) {
+
+					$d.scrollTop($d.scrollTop() + speed);
+
+				}
+
+				if (e.pageX - $d.scrollLeft() < sens) {
+
+					$d.scrollLeft($d.scrollLeft() - speed);
+
+				} else if ($(window).width() - (e.pageX - $d.scrollLeft()) < sens) {
+
+					$d.scrollLeft($d.scrollLeft() + speed);
+					
+				}
+
+			});
+
+		},
+
 		
 	  ////////////////////////////////
 	  // ***** COPY / PASTING ***** //
@@ -596,11 +651,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 			var attrs = _.clone(model.attributes);
 			attrs.id = null;
-			
-			var C = model.constructor;
-			var clone = new C(attrs);
-			
-			return clone;
+
+			return new model.constructor(attrs);
 		},
 		
 		
@@ -714,17 +766,19 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		// because using ambiguous names made the functions much less clear/readable.
 		
 		undo: function(isRedo) {
-			
+			console.log('hey');
 			var Undos = app.Undos, Redos = app.Redos;
-			
-			if (isRedo) {
-				Undos = Redos;
-				Redos = app.Undos;
-			}
+
+			if (isRedo) Undos = app.Redos, Redos = app.Undos;
 			
 			var undo = Undos.pop();
 			
-			if (undo) this.prepareUndo(undo, Undos, Redos);
+			if (undo) {
+				this.prepareUndo(undo, Undos, Redos);
+			} else {
+				$('#error-sound').get()[0].play();
+			}
+
 		},
 		
 		prepareUndo: function(undo, Undos, Redos) {
@@ -825,15 +879,17 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			var new_height = $wall.height() * rel_factor;
 			var new_factor = app.factor * rel_factor;
 			
-			if(new_width  > $(window).width()  &&  // Don't shrink page below window size.
-			   new_height > $(window).height() &&
-			   new_factor < MAX_FACTOR) {
+			if ( new_width  > $(window).width()  &&  // Don't shrink page below window size.
+			     new_height > $(window).height() &&
+			     new_factor < MAX_FACTOR ) {
 				
 				app.factor = new_factor;  							 // Update absolute zoom factor.
 				app.dispatcher.trigger('zoom:objects', rel_factor);  // Zoom marks and zoom page.
 				this.resizePage(new_width, new_height, $wall);
 				this.recenterWindow(rel_factor);
 				
+			} else {
+				//playsound
 			}
 			
 		},

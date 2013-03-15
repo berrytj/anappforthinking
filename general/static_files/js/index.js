@@ -1,82 +1,109 @@
 
 
-var id;  // Wall id, format '/num/'
-var wall_name;
+var index = {
+	DIALOG_HEIGHT: 140,
+	FORM_FADE:     200,
+	WAIT_FOR_MOVE: 800,
+	WAIT_FOR_OPEN: 100,
+};
+
+var closeDialog = function($dialog) {
+
+	$dialog.dialog('close');
+	$(window).unbind('click');
+
+};
+
+var hideCursor = function() {
+
+	var $input = $('#new-wall-input');
+	
+	$input.focus().css('cursor', 'none');
+
+	setTimeout(function() {
+
+		$('body').mousemove(function() {
+			$input.css('cursor', 'text');
+			$('body').unbind('mousemove');
+		});
+
+	}, index.WAIT_FOR_MOVE);
+
+};
+
+var getButtons = function(id, $name_div, $dialog) {
+
+	return {
+
+		Yes: function() {
+				
+			$.ajax({
+				url: '/api/v1/wall' + id,
+				type: 'DELETE',
+				contentType: 'application/json',
+				dataType: 'json',
+			});
+
+			$name_div.remove();
+			closeDialog($dialog);
+
+		},
+
+		Cancel: function() {
+			closeDialog($dialog);
+		},
+
+	};
+
+};
+
+var closeOnClick = function($dialog) {
+
+	$('.ui-dialog').click(function(e) {
+		e.stopPropagation();
+	});
+
+	setTimeout(function() {
+
+		$(window).click(function() {
+			closeDialog($dialog);
+		});
+
+	}, index.WAIT_FOR_OPEN);
+
+};
 
 $(function() {
 	
-	$('#add-wall').click(function() {
-		
+	$('#add-wall').click(function(e) {
+
 		$(this).remove();
-
-		$('#new-wall-form').fadeIn(200, function() {
-
-			$('#new-wall-input').focus();
-			$('#new-wall-input').css('cursor', 'none');
-
-			setTimeout(function() {
-
-				$('body').mousemove(function() {
-
-					$('#new-wall-input').css('cursor', 'text');
-					$('body').unbind('mousemove');
-
-				});
-
-			}, 800);
-
-		});
-
-	});
-	
-	$('.about').click(function(e) {
-		e.preventDefault();
-		$(this).remove();
-		$('#description').show();
-	});
-	
-	$('#confirm-delete').dialog({
-		resizable: false,
-		height: 140,
-		modal: true,
-		autoOpen: false,
-		draggable: false,
-		buttons: {
-			'Yes': function() {
-				$.ajax({
-					url: '/api/v1/wall' + id,
-					type: 'DELETE',
-					contentType: 'application/json',
-					dataType: 'json'
-				});
-				$wall_name.remove();
-				$(this).dialog('close');
-			},
-			'Cancel': function() {
-				$(this).dialog('close');
-			}
-		}
-	});
-	
-	$('.ui-dialog').find('button').each(function() {
-
-		$(this).addClass('blue-button')
-			   .width(60)
-			   .css({ 'font-size':'13px', 'margin-left':'12px' });
+		$('#new-wall-form').fadeIn(index.FORM_FADE, function() { hideCursor(); });
 
 	});
 	
 	$('.delete-wall').click(function(e) {
 
-		var link = $(this).siblings(':first');
-		id = link.attr('href');
-		$('#confirm-delete').dialog('open');
-		$('.ui-dialog').find('button').each(function() { $(this).blur(); });
-		var text = '<p>Are you sure you wish to delete the wall <b>' +
-				   link.text() + '</b>?';
+		var $name = $(this).siblings('a');
+		var $dialog = $('#confirm-delete');
+		var buttons = getButtons($name.attr('href'), $(this).parents().first(), $dialog);
+		var text = '<p>Are you sure you wish to delete the wall <b>' + $name.text() + '</b>?</p>';
+		
+		$dialog.dialog('option', 'buttons', buttons).dialog('open');
 		$('.ui-dialog-content').html(text);
-		$wall_name = $(this).parents(':first');
+		closeOnClick($dialog);
 
+	});
+
+	$('#confirm-delete').dialog({
+
+		resizable: false,
+		height:    index.DIALOG_HEIGHT,
+		modal:     true,
+		autoOpen:  false,
+		draggable: false,
+		position:  { my: 'center bottom', at: 'center' },
+		
 	});
 	
 });

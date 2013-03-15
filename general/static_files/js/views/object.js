@@ -22,6 +22,7 @@ var app = app || {};
 			this.$el.data('view', this);                 // Accessed after dragging, dropping...
 			app.dispatcher.on('zoom:objects', this.zoom, this);
 			this.makeDraggableOnce = _.once(this.makeDraggable);
+			this.AXIS_SWITCH_MAX = 100;
 
 		},
 		
@@ -114,7 +115,7 @@ var app = app || {};
 			this.respondToClick(e);
 			this.$el.removeClass('dragged');  // Free the element to be edited next time it gets clicked.
 			
-			app.dispatcher.trigger('click:wall', e);
+			app.dispatcher.trigger('close:inputs', e);
 		},
 		
 		createUndo: function() {
@@ -186,8 +187,8 @@ var app = app || {};
 					
 					app.dragging = true;          // To prevent input field from opening due to click.
 					$(this).addClass('dragged');  // To prevent mark from going into edit mode once the drag ends / mouse is lifted.
-					that.drag_origin_x = ui.position.left;
-					that.drag_origin_y = ui.position.top;
+					that.hold_x = ui.position.left;
+					that.hold_y = ui.position.top;
 					
 					if ($(this).hasClass('ui-selected')) {
 						that.setInitialDragPositions($(this));
@@ -198,7 +199,7 @@ var app = app || {};
 				
 				drag: function(e, ui) {
 
-					//if (e.shiftKey) that.dragAlongAxis(e, ui, $(this));
+					if (e.shiftKey) that.dragAlongAxis(e, ui, $(this));
 
 					if ($(this).hasClass('ui-selected')) that.updateDragPositions($(this));
 				},
@@ -220,12 +221,30 @@ var app = app || {};
 		
 		dragAlongAxis: function(e, ui, $obj) {
 
-			var x_diff = Math.abs(this.drag_origin_x - ui.position.left);
-			var y_diff = Math.abs(this.drag_origin_y - ui.position.top);
+			var axis = $obj.draggable('option', 'axis');
+			if (axis) this.holdAlongAxis($obj, axis);
 
-			var axis = x_diff > y_diff ? 'x' : 'y';
+			var x_diff = Math.abs(ui.position.left - this.hold_x);
+			var y_diff = Math.abs(ui.position.top  - this.hold_y);
+			var new_axis = (x_diff > y_diff) ? 'x' : 'y';
+			var max = this.AXIS_SWITCH_MAX;
 
-			$obj.draggable('option', 'axis', axis);
+			if ( !axis || (new_axis !== axis && x_diff < max && y_diff < max) ) {
+				$obj.draggable('option', 'axis', new_axis);
+			}
+
+			if (!axis) this.listenForKeyup($obj);
+		},
+
+		holdAlongAxis: function($obj, axis) {
+
+			var prop = (axis === 'x') ? 'top' : 'left';
+			var hold = (axis === 'x') ? this.hold_y : this.hold_x;
+			
+			$obj.get()[0].style[prop] = hold + 'px';
+		},
+
+		listenForKeyup: function($obj) {
 
 			$(window).keyup(function(e) {
 

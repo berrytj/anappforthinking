@@ -31,20 +31,13 @@ var WP_SCROLL_TIME = 1000;
 			return this;
 		},
 		
-		moveToWaypoint: function() {
+		moveToWaypoint: function(e) {
+
+			var model = this.waypoint.model;
+			var left = model.get('x') * app.factor - $(window).width() / 2 + WP_WIDTH / 2;
+			var top  = model.get('y') * app.factor - $(window).height() * WP_Y_FACTOR;
 			
-			var wp = this.waypoint;
-			
-			var left = wp.model.get('x') * app.factor - $(window).width() / 2 + WP_WIDTH / 2;
-			var top  = wp.model.get('y') * app.factor - $(window).height() * WP_Y_FACTOR;
-			
-			$('html, body').animate({
-				
-				scrollLeft: left,
-				scrollTop:  top
-				
-			}, WP_SCROLL_TIME);
-			
+			$('html, body').animate({ scrollLeft: left, scrollTop:  top }, WP_SCROLL_TIME);
 		},
 				
 	});

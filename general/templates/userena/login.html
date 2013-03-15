@@ -23,76 +23,68 @@
 	
 	<div class="row content">
 				
-				<div class="span3 offset3 form-area">
-					{% block forms %}
+		<div class="span3 offset3 form-area">
+			{% block forms %}
 
-						<form action="" id="sign-in-form" method="post">
-							{% csrf_token %}
+				<form action="" id="sign-in-form" method="post">
+					{% csrf_token %}
 
-							<fieldset>
+					<fieldset>
 
-									<legend>Log In
-										<span class="or-login">
-											<a href="/signup/">or sign up</a>
-										</span>
-									</legend>
+							<legend>Log In
+								<span class="or-login">
+									<a href="/signup/">or sign up</a>
+								</span>
+							</legend>
 
-									{{ form.non_field_errors }}
+							{{ form.non_field_errors }}
 
-									{% for field in form %}
+							{% for field in form %}
 
-											{{ field.errors }}
+									{{ field.errors }}
 
-											{% if field.name == 'remember_me' %}
+									{% if field.name == 'remember_me' %}
 
-												<div id="remember-box">
-														<input class="blue-button" type="submit" value="Log In" />
-														<span id="rem-divider"></span>
-														<span class="checkbox remember-me">
-															<label for="id_{{ field.name }}">{{ field }} Remember me</label>
-														</span>
-												</div>
+										<div id="remember-box">
 
-											{% else %}
-												<p>{{ field.label_tag }}{{ field }}</p>
-											{% endif %}
+											<input class="button" type="submit" value="Log In" />
+											<span id="rem-divider"></span>
+											<span class="checkbox remember-me">
+												<label for="id_{{ field.name }}">{{ field }} Remember me</label>
+											</span>
+											
+										</div>
 
-									{% endfor %}
+									{% else %}
+										<p>{{ field.label_tag }}{{ field }}</p>
+									{% endif %}
 
-							</fieldset>
+							{% endfor %}
 
-							<p class="forgot-password">
-								<a href="{% url userena_password_reset %}" title="Forgot your password?">
-									Forgot your password?
-								</a>
-							</p>
+					</fieldset>
 
-							{% if next %}
-								<input type="hidden" name="next" value="{{ next }}" />
-							{% endif %}
+					<p class="forgot-password">
+						<a href="{% url userena_password_reset %}" title="Forgot your password?">
+							Forgot your password?
+						</a>
+					</p>
 
-						</form>
+					{% if next %}
+						<input type="hidden" name="next" value="{{ next }}" />
+					{% endif %}
 
-					{% endblock %}
-				</div>
-				
-				<div class="span4 offset1 brand-name">
-					<div class="first-line">an app</div>
-					<div>for thinking</div>
-				</div>
+				</form>
+
+			{% endblock %}
+		</div>
+		
+		<div class="span4 offset1 brand-name">
+			<div class="first-line">an app</div>
+			<div>for thinking</div>
+		</div>
 				
 	</div>
-<!--  
-	<div class="row footer">
-		<div class="span12 about">
-			<a href="/about/">about</a>
-		</div>
-		<div id="description" class="span4 offset4" style="display:none;">
-			An App for Thinking was built to help you think and arrange your thoughts.
-			Email tom.berry@me.com with questions or feedback.
-		</div>
-	</div>
--->  
+ 
 </div>
 
 <script src="{{STATIC_URL}}index.js"></script>
