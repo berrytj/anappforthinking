@@ -1,4 +1,9 @@
 
+from django.core.management import setup_environ
+from general import settings
+
+setup_environ(settings)
+
 from walls.models import Wall, Mark, Waypoint
 
 hiswall = Wall.objects.filter(pk=2)
