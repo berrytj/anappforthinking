@@ -140,13 +140,13 @@ a:hover {
 
 #rem-divider {
 	display:inline-block;
-	width:10px;
+	width:7px;
 }
 
 .remember-me {
 	display:inline-block;
 	position:relative;
-	width:42%;
+	width:44%;
 }
 
 .forgot-password {
