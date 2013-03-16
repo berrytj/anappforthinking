@@ -771,7 +771,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			var Undos = app.Undos, Redos = app.Redos;
 
 			if (isRedo) Undos = app.Redos, Redos = app.Undos;
-			
+
 			var undo = Undos.pop();
 			
 			if (undo) {
@@ -787,7 +787,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			var type = undo.get('type');
 			
 			if (type === 'group_start') {
-				
+
 				undo.destroy();
 				Redos.create({ wall: WALL_URL, type: 'group_end' });
 				this.performUndo(Undos.pop(), Undos, Redos, true);
@@ -801,7 +801,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		},
 		
 		performUndo: function(undo, Undos, Redos, group) {
-				
+
 				if (undo.get('type') === 'group_end') console.log('broken');
 				
 				var coll = this.getColl(undo.get('type'));

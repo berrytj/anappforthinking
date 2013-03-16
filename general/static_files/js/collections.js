@@ -55,7 +55,9 @@ var app = app || {};
 	
 	// Create our global collection of **Undos**.
 	app.Undos = new UndoSet();
-	app.Undos.comparator = 'id';
+	app.Undos.comparator = function(model) {
+		return parseInt(model.get('id'));
+	};
 	
 	
 	// Redo Collection
@@ -71,7 +73,9 @@ var app = app || {};
 	
 	// Create our global collection of **Redos**.
 	app.Redos = new RedoSet();
-	app.Redos.comparator = 'id';
+	app.Redos.comparator = function(model) {
+		return parseInt(model.get('id'));
+	};
 	
 	
 	// Clipboard
