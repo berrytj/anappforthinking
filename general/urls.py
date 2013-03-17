@@ -20,11 +20,12 @@ v1_api.register(RedoResource())
 
 
 urlpatterns = patterns('',
+    url(r'^view/', include('my_import.urls')),
 	url(r'^admin/', include(admin.site.urls)),
 	url(r'^settings/', 'userena.views.profile_detail'),
 	url(r'^api/', include(v1_api.urls)),
 	url(r'^', include('walls.urls')),
-	url(r'^', include('userena.urls')),
+#	url(r'^', include('userena.urls')),
 )
 
 if not settings.DEBUG:

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+
+<body>
+
+<p style="color:green">
+  Congratulations, you have successfully authorized this application to access your Evernote account!
+</p>                                                                                               
+
+<p>
+  Nooooob.  Your account contains the following notebooks:
+</p>
+
+<ul>
+  {% for notebook in notebooks %}
+    <li>{{ notebook.name }}</li>
+  {% endfor %}
+</ul>
+
+<p>
+  And the following notes:
+</p>
+
+<ul>
+  {% for note in notes %}
+    <li><b>{{ note.title }}</b></li>
+    <br>
+    {{ note.content|safe }}
+    <br><br>
+  {% endfor %}
+</ul>
+
+
+</body>
+</html>

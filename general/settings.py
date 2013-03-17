@@ -1,6 +1,6 @@
 # Django settings for mysite project.
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -143,6 +143,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'south',
     'walls',
+    'my_import',
 #    'debug_toolbar',
 	'userena',
 	'guardian',
