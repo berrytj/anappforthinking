@@ -50,10 +50,8 @@ var addToQueue = function() {
 
 	app.queue.fail(function() {
 
-		if (!app.disconnected) {
-			app.disconnected = true;
-			alert('Connection lost.  Please refresh the browser.');
-		}
+		app.disconnected = true;
+		alert('Connection lost.  Please refresh the browser.');
 
 	});
 

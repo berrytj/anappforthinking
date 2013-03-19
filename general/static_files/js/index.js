@@ -37,9 +37,9 @@ var getButtons = function(id, $name_div, $dialog) {
 	return {
 
 		Yes: function() {
-				
+
 			$.ajax({
-				url: '/api/v1/wall' + id,
+				url: '/api/v1/wall' + id,  // `id` is format /1/
 				type: 'DELETE',
 				contentType: 'application/json',
 				dataType: 'json',

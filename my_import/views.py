@@ -1,76 +1,100 @@
 from evernote.api.client import EvernoteClient
-import evernote.edam.userstore.UserStore as UserStore
-import evernote.edam.notestore.NoteStore as NoteStore
+from evernote.edam.userstore import UserStore
+from evernote.edam.notestore import NoteStore
 
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response
-from django.shortcuts import redirect
+from django.shortcuts import render_to_response, redirect
+
+from my_import.models import Token
+from walls.models import Wall, Mark, Waypoint
+
+from my_import.html2text import html2text
+
 
 EN_CONSUMER_KEY = 'tberry860'
 EN_CONSUMER_SECRET = 'd119b2eb6fdff221'
 
+INIT_X = 250
+INIT_Y = 260
+X_SPACING = 600
+Y_SPACING = 40
+WP_OFFSET_X = 150
+WP_OFFSET_Y = -115
+MAX_NOTES = 10000
+
 
 def get_evernote_client(token=None):
-	if token:
-		return EvernoteClient(token=token, sandbox=True)
-	else:
-		return EvernoteClient(
-			consumer_key=EN_CONSUMER_KEY,
-			consumer_secret=EN_CONSUMER_SECRET,
-			sandbox=True
-		)
-
-
-def index(request):
-	return render_to_response('oauth/index.html')
-
-
-def view_notes(request):
-
-	# import walls-models, save new walls, marks, and waypoints, redirect to index or wall if one notebook
-
-	token = 'S=s1:U=55856:E=144cd4a4ec1:C=13d759922c2:P=185:A=tberry860:V=2:H=28b25404f2c504409b69e0a39b7b3359'
-	client = get_evernote_client(token)
-	note_store = client.get_note_store()
-	notebooks = note_store.listNotebooks()
-	filter = NoteStore.NoteFilter()
-	note_list = note_store.findNotes(filter, 0, 10).notes
-	notes = []
-
-	for obj in note_list:
-		notes.append(note_store.getNote(obj.guid, True, True, True, True))
-
-	return render_to_response('view_notes.html', { 'notebooks': notebooks, 'notes': notes })
+    if token:
+        return EvernoteClient(token=token, sandbox=True)
+    else:
+        return EvernoteClient(
+            consumer_key=EN_CONSUMER_KEY,
+            consumer_secret=EN_CONSUMER_SECRET,
+            sandbox=True
+        )
 
 
 def auth(request):
-	client = get_evernote_client()
-	callbackUrl = 'http://%s%s' % (
-		request.get_host(), reverse('evernote_callback'))
-	request_token = client.get_request_token(callbackUrl)
+    client = get_evernote_client()
+    callbackUrl = 'http://%s%s' % (
+        request.get_host(), reverse('evernote_callback'))
+    request_token = client.get_request_token(callbackUrl)
 
-	# Save the request token information for later
-	request.session['oauth_token'] = request_token['oauth_token']
-	request.session['oauth_token_secret'] = request_token['oauth_token_secret']
+    # Save the request token information for later
+    request.session['oauth_token'] = request_token['oauth_token']
+    request.session['oauth_token_secret'] = request_token['oauth_token_secret']
 
-	# Redirect the user to the Evernote authorization URL
-	return redirect(client.get_authorize_url(request_token))
+    # Redirect the user to the Evernote authorization URL
+    return redirect(client.get_authorize_url(request_token))
 
 
 def callback(request):
-	try:
-		client = get_evernote_client()
-		token = client.get_access_token(
-			request.session['oauth_token'],
-			request.session['oauth_token_secret'],
-			request.GET.get('oauth_verifier', '')
-		)
-	except KeyError:
-		return redirect('/')
+    try:
+        client = get_evernote_client()
+        token = client.get_access_token(
+            request.session['oauth_token'],
+            request.session['oauth_token_secret'],
+            request.GET.get('oauth_verifier', '')
+        )
+    except KeyError:
+        return redirect('/')
 
-	#saveToken(token)
-	return redirect('/')
+    user = request.user
+
+    new = Token(user=user, string=token, service='Evernote')
+    new.save()
+
+    client = get_evernote_client(token)
+    note_store = client.get_note_store()
+    notebooks = note_store.listNotebooks()
+
+    # redirect to new wall if just one notebook
+    for notebook in notebooks:
+        wall = Wall(user=user, title=notebook.name)
+        wall.save()
+        filter = NoteStore.NoteFilter(notebookGuid=notebook.guid)
+        notes = note_store.findNotes(filter, 0, MAX_NOTES).notes
+
+        for i, note in enumerate(notes):
+            x = INIT_X + (i * X_SPACING)
+            wp = Waypoint(wall=wall, text=note.title, x=x+WP_OFFSET_X, y=INIT_Y+WP_OFFSET_Y)
+            wp.save()
+            html = note_store.getNote(note.guid, True, True, True, True).content.decode('utf-8')
+            marks = html2text(html).split('\n')
+
+            for j, mark in enumerate(marks):
+                mark = mark.strip()
+                if mark:
+                    y = INIT_Y + j * Y_SPACING
+                    mark = Mark(wall=wall, text=mark, x=x, y=y)
+                    mark.save()
+
+    return redirect('/')
+
+
+def index(request):
+    return render_to_response('my_import/index.html')
 
 
 def reset(request):
-	return redirect('/')
+    return redirect('/')

@@ -207,23 +207,27 @@ a:hover {
 .footer {
 	position:absolute;
 	bottom:8%;
-	left:50%;
-	width:200px;
-	margin-left:-103px;
+	width:50%;
+	left:25%;
 	text-align:center;
 
 	font-size:13px;
-	font-family:HelveticaNeue, Helvetica-Neue, Helvetica, Arial, sans-serif;
+	font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+	font-weight:normal;
 }
 
 .footer a {
 	color:#999999;
-	text-shadow:-1px -1px 0px rbga(0,0,0,1), 1px 1px 0px rbga(255,255,255,1);
 }
 
 .footer a:hover {
 	text-decoration:none;
 	color:#666666;
+}
+
+.footer span {
+	display:inline-block;
+	width:20px;
 }
 
 
