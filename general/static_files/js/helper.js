@@ -12,7 +12,7 @@ var updateEach = function(update, $group) {
 
 var updateModels = function($obj, update, $group) {
 	
-	if ($obj.hasClass('ui-selected')) {
+	if ($obj.hasClass('ui-selected') || $group) {
 		
 		if (!$group) $group = $('.ui-selected');
 		updateEach(update, $group);

@@ -1,29 +1,22 @@
-/*         MENU          */
-/*************************/
 
-.menu-base {
-	position:fixed;
-	width:100%;
-	height:24px;
-}
 
-#menu-gradient {
-	z-index:9999;
+#toolbar {
+    position:fixed;
+    width:100%;
+    height:24px;
+  	z-index:20000;
+    box-shadow:0px 2px 4px rgba(0,0,0,0.7);
 	
     background: rgb(229,210,167); /* Old browsers */
-    background: -moz-linear-gradient(top,  rgba(229,210,167,1) 0%, rgba(183,144,33,1) 100%); /* FF3.6+ */
-    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(229,210,167,1)), color-stop(100%,rgba(183,144,33,1))); /* Chrome,Safari4+ */
-    background: -webkit-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* Chrome10+,Safari5.1+ */
-    background: -o-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* Opera 11.10+ */
-    background: -ms-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* IE10+ */
-    background: linear-gradient(to bottom,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* W3C */
+    background-image:url('../images/dirty.png'), -moz-linear-gradient(top,  rgba(229,210,167,1) 0%, rgba(183,144,33,1) 100%); /* FF3.6+ */
+    background-image:url('../images/dirty.png'), -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(229,210,167,1)), color-stop(100%,rgba(183,144,33,1))); /* Chrome,Safari4+ */
+    background-image:url('../images/dirty.png'), -webkit-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* Chrome10+,Safari5.1+ */
+    background-image:url('../images/dirty.png'), -o-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* Opera 11.10+ */
+    background-image:url('../images/dirty.png'), -ms-linear-gradient(top,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* IE10+ */
+    background-image:url('../images/dirty.png'), linear-gradient(to bottom,  rgba(229,210,167,1) 0%,rgba(183,144,33,1) 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e5d2a7', endColorstr='#b79021',GradientType=0 ); /* IE6-9 */
 }
 
-#menu {
-	box-shadow:0px 2px 4px rgba(0,0,0,0.7);
-	z-index:10001;
-}
 
 
 /*         BUTTONS          */

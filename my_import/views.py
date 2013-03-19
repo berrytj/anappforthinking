@@ -68,9 +68,8 @@ def callback(request):
     note_store = client.get_note_store()
     notebooks = note_store.listNotebooks()
 
-    # redirect to new wall if just one notebook
     for notebook in notebooks:
-        wall = Wall(user=user, title=notebook.name)
+        wall = Wall(user=user, title=notebook.name, not_spaced=True)
         wall.save()
         filter = NoteStore.NoteFilter(notebookGuid=notebook.guid)
         notes = note_store.findNotes(filter, 0, MAX_NOTES).notes
@@ -88,6 +87,9 @@ def callback(request):
                     y = INIT_Y + j * Y_SPACING
                     mark = Mark(wall=wall, text=mark, x=x, y=y)
                     mark.save()
+
+        if len(notebooks) == 1:
+            return redirect('/' + str(wall.id))
 
     return redirect('/')
 

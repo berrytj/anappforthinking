@@ -57,7 +57,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		events: {
 			'click'            : 'toggleInput',
 			'keydown'          : 'toggleOrZoom',
-			'mouseup'          : 'resetDragging', //move into toggle input? //is this still being used?
+			'mouseup'          : 'resetDragging', //move into toggle input? is this still being used?
 			'click #input'     : 'doNothing',
 			'click #trash-can' : 'doNothing',
 		},
@@ -69,7 +69,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		
 		
 		initialize: function() {
-
+			
 			this.setViewVariables();
 			this.setAppVariables();
 			this.listen();
@@ -87,7 +87,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			this.input = this.$('#input');  // Cache input field (accessed frequently).
 			this.input.autosize();          // Input box will grow / shrink automatically.
 			this.keyDown = false;           // Used to prevent multiple zooms when holding down an arrow key.
-			
+
 		},
 		
 		setAppVariables: function() {
@@ -102,13 +102,17 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		
 		populateObjects: function() {
 			
-			var doneLoading = _.after(2, this.doneLoading, this);
+			var doneLoading = _.after(2, this.doneLoading);
+			
+			var that = this;
 
-			app.Marks.fetch( _.extend(FETCH_OPTS, { success: doneLoading }) );
+			app.Marks.fetch( _.extend(FETCH_OPTS, { success: function() {
+				doneLoading(that);
+			} }) );
 
 			app.Waypoints.fetch( _.extend(FETCH_OPTS, { success: function() {
 
-				doneLoading();
+				doneLoading(that);
 				app.dispatcher.trigger('sort:tags');
 
 			} }) );
@@ -128,8 +132,11 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
-		doneLoading: function() {
-			this.$('#loading').fadeOut(LOADING_FADE);
+		doneLoading: function(that) {
+			
+			if (not_spaced === 'True') that.spaceColumns();
+			that.$('#loading').fadeOut(LOADING_FADE);
+
 		},
 		
 		listen: function() {
@@ -201,6 +208,24 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				
 			});
 			
+		},
+
+		spaceColumns: function() {
+			
+			var x_vals = {};
+
+			$('.mark').each(function() {
+
+				var x = $(this).offset().left;
+				$(this).addClass('_' + x);
+				x_vals[x] = true;
+
+			});
+
+			for (var x in x_vals) {
+				if (x_vals.hasOwnProperty(x)) this.list( $('._' + x) );
+			}
+
 		},
 		
 		
@@ -663,14 +688,19 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  /////////////////////////
 		
 		
-		list: function() {
+		list: function($marks) {
 			
-			var $marks = this.$('.ui-selected').not('.waypoint');
+			var align = false;
+
+			if (!$marks) {
+				$marks = this.$('.ui-selected').not('.waypoint');
+				align = true;
+			}
 			
 			if ($marks.length) {
 				
 				var ordered_marks = this.sortMarksByTop($marks);
-				this.leftAlignMarks($marks, ordered_marks[0]);
+				if (align) this.leftAlignMarks($marks, ordered_marks[0]);
 				this.evenlySpace(ordered_marks);
 				
 				var $obj = $marks.first();

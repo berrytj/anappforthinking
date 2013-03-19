@@ -11,30 +11,23 @@
 {% block body %}
 	
 	<div id='toolbar'>
-
-		<div id='menu-gradient'   class='menu-base'></div>
-		<div id='menu-background' class='menu-base'></div>
-
-		<div id='menu'            class='menu-base'>
 			
-			<span id='main-menu-btn'>
-				<a id='main-menu-link' href='/'>&larr;</a>
-			</span>
-			
-			<span id='wall-title'>{{ wall.title }}</span>
+		<span id='main-menu-btn'>
+			<a id='main-menu-link' href='/'>&larr;</a>
+		</span>
+		
+		<span id='wall-title'>{{ wall.title }}</span>
 
-			<span id='buttons'>
-				<span class='menu-btn bar'>|</span><span id='saving'    class='menu-btn btn-disabled'>saved</span>
-				<span class='menu-btn bar'>|</span><span id='redo-btn'  class='menu-btn'             >redo</span>
-				<span class='menu-btn bar'>|</span><span id='undo-btn'  class='menu-btn'             >undo</span>
-				<span class='menu-btn bar'>|</span><span id='zoom-out'  class='menu-btn'             >zoom out</span>
-				<span class='menu-btn bar'>|</span><span id='zoom-in'   class='menu-btn'             >zoom in</span>
-				<span class='menu-btn bar'>|</span><span id='list-btn'  class='menu-btn btn-disabled'>list</span>
-				<span class='menu-btn bar'>|</span><span id='paste-btn' class='menu-btn btn-disabled'>paste</span>
-				<span class='menu-btn bar'>|</span>
-			</span>
-			
-		</div> <!-- end menu -->
+		<span id='buttons'>
+			<span class='menu-btn bar'>|</span><span id='saving'    class='menu-btn btn-disabled'>saved</span>
+			<span class='menu-btn bar'>|</span><span id='redo-btn'  class='menu-btn'             >redo</span>
+			<span class='menu-btn bar'>|</span><span id='undo-btn'  class='menu-btn'             >undo</span>
+			<span class='menu-btn bar'>|</span><span id='zoom-out'  class='menu-btn'             >zoom out</span>
+			<span class='menu-btn bar'>|</span><span id='zoom-in'   class='menu-btn'             >zoom in</span>
+			<span class='menu-btn bar'>|</span><span id='list-btn'  class='menu-btn btn-disabled'>list</span>
+			<span class='menu-btn bar'>|</span><span id='paste-btn' class='menu-btn btn-disabled'>paste</span>
+			<span class='menu-btn bar'>|</span>
+		</span>
 
 	</div> <!-- end toolbar -->
 	
@@ -88,8 +81,9 @@
 
 
 	<script>
-		var username = "{{ username }}";
-		var wall_id  = "{{ wall.id }}";
+		var username = '{{ username }}';
+		var wall_id = '{{ wall.id }}';
+		var not_spaced = '{{ not_spaced }}';
 	</script>
 	
 	
