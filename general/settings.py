@@ -1,6 +1,6 @@
 # Django settings for mysite project.
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -64,6 +64,7 @@ MEDIA_URL = ''
 
 import os.path
 PROJECT_DIR = os.path.dirname(__file__)
+PROJECT_DIR = '/Users/Tom/Desktop/anappforthinking/general/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
