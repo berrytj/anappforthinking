@@ -10,7 +10,8 @@ class Wall(models.Model):
     
     user = models.ForeignKey(User)
     title = models.CharField(max_length=200)
-    last_updated = models.DateTimeField('last updated', default = datetime.now)
+    last_updated = models.DateTimeField('last updated', default=datetime.now)
+    not_spaced = models.BooleanField(default=False)
     def __unicode__(self):
         return self.title
     class Meta:

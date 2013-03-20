@@ -5,6 +5,11 @@ from django.contrib.auth.decorators import login_required
 from walls.models import Wall, TagOrder
 
 
+def gallery(request):
+
+    return render(request, 'main.html')
+
+
 def index(request):
     '''Renders the home page.'''
     

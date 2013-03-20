@@ -20,6 +20,7 @@ v1_api.register(RedoResource())
 
 
 urlpatterns = patterns('',
+    url(r'^gallery/', 'walls.views.gallery'),
 	url(r'^admin/', include(admin.site.urls)),
 	url(r'^settings/', 'userena.views.profile_detail'),
 	url(r'^api/', include(v1_api.urls)),
