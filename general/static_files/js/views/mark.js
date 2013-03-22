@@ -46,6 +46,7 @@ var MAX_NORMAL = 1;
 			
 		},
 		
+		// Restyle the mark according to the app's zoom factor.
 		zoomSize: function() {
 			
 			var style = {
@@ -73,10 +74,13 @@ var MAX_NORMAL = 1;
 			this.shrinkwrap();
 		},
 		
+		// Resize the block element to be no bigger than the
+		// inline div (so users don't drag objects accidentally).
 		shrinkwrap: function() {
 			this.$el.width( this.$('label').width() );
 		},
 		
+		// Figure out proper response to mark being clicked.
 		respondToClick: function(e) {
 			
 			var $mark = this.$el;
@@ -86,6 +90,9 @@ var MAX_NORMAL = 1;
 			(e.shiftKey || e.metaKey) ? this.toggleSelected($mark) : this.edit($mark);
 		},
 		
+		// Figure out the correct width for an input.  We don't want it to
+		// be too narrow, but we also don't want it to be too wide that text
+		// re-wraps confusingly.
 		inputWidth: function(height) {
 			
 			var current = this.$el.width();
@@ -96,6 +103,7 @@ var MAX_NORMAL = 1;
 			return (tooNarrow || oneRow) ? zoomed : current;
 		},
 		
+		// Switch mark into editing mode.
 		edit: function($mark) {
 			
 			app.dispatcher.trigger('clear:selected');
@@ -111,6 +119,8 @@ var MAX_NORMAL = 1;
 			}, 1);  // Wait a millisecond for click to end.
 		},
 		
+		// Style input properly so text doesn't move at all and
+		// editing mode feels fully integrated into the mark.
 		showInput: function(width, height) {
 			
 			this.$('label').fadeOut(INPUT_FADE);
@@ -124,6 +134,7 @@ var MAX_NORMAL = 1;
 							.autosize();  // Call on all inputs at the beginning?
 		},
 		
+		// Close the mark's editing mode, saving if necessary.
 		closeInput: function() {
 			
 			var $input = this.$('.input');
@@ -150,11 +161,13 @@ var MAX_NORMAL = 1;
 			
 		},
 		
+		// Close the input if the appropriate keys have been clicked.
 		checkIfFinished: function(e) {
 				if (e.metaKey || e.shiftKey) return;
 				if (e.which === ENTER_KEY) this.closeInput();
 		},
 		
+		// Update model with new text.
 		saveEdit: function(new_text) {
 			
 			var current_text = this.model.get('text');
@@ -169,6 +182,8 @@ var MAX_NORMAL = 1;
 			app.last_edited = this;
 		},
 		
+		// Switch mark in and out of editing mode, enabling `list`
+		// functionality if appropriate.
 		toggleSelected: function($mark) {
 			
 			$mark.toggleClass('ui-selected');
