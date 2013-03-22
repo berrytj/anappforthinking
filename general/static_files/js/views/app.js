@@ -100,6 +100,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Retrieve marks and waypoints from the server.
 		populateObjects: function() {
 			
 			var doneLoading = _.after(2, this.doneLoading);
@@ -119,6 +120,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Retrieve undos and redos from the server -- undos are saved
+		// permanently for unlimited reversion.  If no undos/redos, disable
+		// the corresponding button on the UI.
 		populateUndos: function() {
 			
 			var callback = function(coll) {
@@ -132,13 +136,16 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Remove 'loading...' symbol from the page and take care
+		// of any other tasks.
 		doneLoading: function(that) {
 			
-			if (not_spaced === 'True') that.spaceColumns();
+			if (not_spaced === 'True') that.spaceColumns(); // For formatting content imported from Evernote.
 			that.$('#loading').fadeOut(LOADING_FADE);
 
 		},
 		
+		// Set up bindings for keys, collection changes, and dispatches.
 		listen: function() {
 			
 			this.listenToCollection(app.Marks);
@@ -159,6 +166,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			d.on('close:inputs',   this.hideInputs,       this);
 		},
 		
+		// Automatically create views for new models / newly-retrieved models
+		// unless otherwise specified (e.g. model has `silent` attribute).
 		listenToCollection: function(coll) {
 			
 			var that = this;
@@ -170,6 +179,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			coll.on('reset', this.renderCollection, this);
 		},
 
+		// Build a view and assign it the new model, then render the view.
 		createViewForModel: function(model) {
 
 			var Constructor = (model.type === 'mark') ? app.MarkView : app.WaypointView;
@@ -178,10 +188,12 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		},
 		
+		// Create a view for each model in the collection.
 		renderCollection: function(coll) {
 			coll.each(this.createViewForModel, this);
 		},
 		
+		// Respond to undo keys as in a desktop program.
 		listenToUndoKeys: function() {
 			
 			$(document).keydown(function(e) {
@@ -195,6 +207,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Respond to copy and paste keyboard shortcuts as in a desktop program.
 		listenForCopyPaste: function() {
 			
 			var view = this;
@@ -210,6 +223,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 
+		// For content imported from other sites: call the `list` function
+		// on the new marks so they display nicely on the page.
 		spaceColumns: function() {
 			
 			var x_vals = {};
@@ -234,7 +249,10 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  // ***** INTERACTING ***** //
 	  /////////////////////////////
 
-		
+		// Add an object to the undo collection that signals the
+		// beginning or end a group undo -- e.g. when a group of
+		// marks is dragged.  This allows us to undo all those actions
+		// at once.
 		undoMarker: function(type) {
 			
 			app.Undos.create({
@@ -243,6 +261,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			});
 		},
 
+		// Find out whether the keypress corresponds to a zoom or
+		// to an input opening/closing.
 		toggleOrZoom: function(e) {
 			
 			if (e.which === ENTER_KEY) {
@@ -253,6 +273,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		},
 		
+		// Control the keyDown variable so we can prevent
+		// multiple actions from occuring when a key is held down.
 		listenForKeyup: function() {
 			
 			var view = this;
@@ -264,13 +286,15 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			});
 		},
 
+		// Hide the inputs -- called in a variety of situations.
 		hideInputs: function(e) {
 			return this.closeInput('mark') || this.closeInput('waypoint');
 		},
 		
+		// Create a blank undo so that object creation can be undone / redone.
 		createEmptyUndo: function(model) {
-										  // Create a blank undo so object
-			app.Undos.create({            // creation can be undone / redone.
+			
+			app.Undos.create({
 				
 				wall:   WALL_URL,
 				type:   model.type,
@@ -284,6 +308,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			app.dispatcher.trigger('clear:redos');
 		},
 
+		// Create a model for a newly created object and
+		// save it to the appropriate collection.
 		createModel: function(coll, text, pos) {
 
 			var attributes = {
@@ -296,6 +322,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			coll.create(attributes, { success: this.createEmptyUndo });
 		},
 
+		
 		closeInput: function(type) {
 			
 			var container, textarea, coll;
