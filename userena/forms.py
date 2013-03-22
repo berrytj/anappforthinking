@@ -191,6 +191,9 @@ class ChangeEmailForm(forms.Form):
         else: self.user = user
 
     def clean_email(self):
+        """ Temporary fix because change email is resulting in 500 error, added by Tom """
+        raise forms.ValidationError(_(u'This feature is temporarily unavailable.'))
+
         """ Validate that the email is not already registered with another user """
         if self.cleaned_data['email'].lower() == self.user.email:
             raise forms.ValidationError(_(u'You\'re already known under this email.'))
@@ -206,6 +209,7 @@ class ChangeEmailForm(forms.Form):
 
         """
         return self.user.userena_signup.change_email(self.cleaned_data['email'])
+
 
 class EditProfileForm(forms.ModelForm):
     """ Base form used for fields that are always required """

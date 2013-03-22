@@ -1,0 +1,151 @@
+
+$family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+body {
+	font: {
+		family:$family;
+		weight:300;
+		size:14px;
+	}
+	color:#3d3d3d;
+}
+
+#wall {
+	position:absolute;
+	width:7200px;
+	height:3800px;
+	background-image: url('../images/4.jpg');
+	background-size:6% 6%;
+}
+
+#loading {
+	position:fixed;
+	width:300px;
+	height:100px;
+	top:50%;
+	left:50%;
+	margin-left:-150px;
+	text-align:center;
+	font-size:32px;
+	z-index:0;
+}
+
+/* CSS overrides for webkit browsers: Safari 3+, Chrome 1+ */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  #loading {
+	  background-color:#111111;
+	  color:transparent;
+	  text-shadow:0px 1px 1px rgba(255,255,255,0.5);
+	  -webkit-background-clip:text;
+	  -moz-background-clip:text;
+	  background-clip:text;
+  }
+}
+
+.input {
+	position:absolute;
+	display:none;
+	padding:3px 7px 5px 6px;
+	margin:-3px 0px 0px -6px;
+	height:auto;
+	overflow:hidden;
+	resize:none;
+	
+	font-family:$family;
+	font-weight:300;
+	line-height:140%;
+	color:#3d3d3d;
+
+	$inputshadow:-1px -1px 1px 1px rgba(186,181,164,1), 1px 1px 1px 1px rgba(255,255,255,1);
+	box-shadow:$inputshadow;
+	border:none;
+	background-image: url('../images/5.jpg');
+	opacity:0.93;
+	z-index:9990;
+
+	&:focus {
+		box-shadow:$inputshadow;
+		border:none;
+		/*border:1px dashed rgba(222,170,29,1);*/
+	}
+}
+
+#input {
+	/* To avoid jump after initial creation. */
+	padding: {
+		top:4px;
+		left:8px;
+	}
+}
+
+.mark {
+	position:absolute;
+	cursor:pointer;
+	z-index:10;
+	
+	width:370px;
+	line-height:0px;
+	
+	border:1px solid rgba(0,0,0,0);
+}
+
+label {
+	display:inline;
+	white-space:pre-wrap;
+	line-height:140%;
+}
+
+.bullet {
+	position:relative;
+	vertical-align:top;
+	top:-1px;
+	display:inline-block;
+	color:#666666;
+}
+
+button {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	font-size: 100%;
+	vertical-align: baseline;
+	font-family: inherit;
+	color: inherit;
+	-webkit-appearance: none;
+	/*-moz-appearance: none;*/
+	-ms-appearance: none;
+	-o-appearance: none;
+	appearance: none;
+}
+
+.trash-can {
+	position:fixed;
+	width:86px;
+	height:86px;
+	right:0;
+	bottom:0;
+	background-image:url('../images/trash.png');
+	background-repeat:no-repeat;
+	z-index:10000;
+	opacity:0.6;
+}
+
+.active-trash-can {
+	opacity:1;
+}
+
+.mark.ui-selecting, .mark.ui-selected {
+/*    box-shadow:0px 0px 3px 1px rgba(232,191,79,0.8);*/
+	border:1px dashed rgba(222,170,29,1);
+}
+
+.ui-state-disabled {
+	/* We don't need to see when selectable has been disabled. */
+	opacity:1;
+}
+
+.ui-selectable-helper {
+	border:1px solid #FFFFFF;
+	background-color:rgba(255,255,255,0.25);
+}

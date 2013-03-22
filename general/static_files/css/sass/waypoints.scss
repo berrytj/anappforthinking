@@ -1,5 +1,11 @@
 
 
+<<<<<<< HEAD:general/static_files/css/waypoints.css
+=======
+$family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+$wptext:#888888;
+
+>>>>>>> oldpath:general/static_files/css/sass/waypoints.scss
 /*           WAYPOINTS           */
 /*********************************/
 
@@ -10,10 +16,12 @@
 	width:84px;
 	height:84px;
 
-	color:#888888;
-	font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
-	font-weight:bold;
-	font-size:16px;
+	color:$wptext;
+	font: {
+		family:$family;
+		font-weight:bold;
+		font-size:16px;
+	}
 	z-index:1;
 }
 
@@ -32,7 +40,7 @@
 	text-align:center;
 	font-size:16px;
 	font-weight:bold;
-	color:#888888;
+	color:$wptext;
 	box-shadow:none;
 	border:none;
 	resize:none;

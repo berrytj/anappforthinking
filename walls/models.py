@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from accounts.models import MyProfile
 
 class Wall(models.Model):
+<<<<<<< HEAD
 	'''A surface for users to create and manipulate marks.'''
 	
 	user = models.ForeignKey(User)
@@ -18,6 +19,20 @@ class Wall(models.Model):
 		get_latest_by = "pk"
 		ordering = ['-id']
 	
+=======
+    '''A surface for users to create and manipulate marks.'''
+    
+    user = models.ForeignKey(User)
+    title = models.CharField(max_length=200)
+    last_updated = models.DateTimeField('last updated', default=datetime.now)
+    not_spaced = models.BooleanField(default=False)
+    def __unicode__(self):
+        return self.title
+    class Meta:
+        get_latest_by = "pk"
+        ordering = ['-id']
+    
+>>>>>>> oldpath
 class Mark(models.Model):
 	'''A thought, idea, link, or other piece of text created by the user.'''
 	
