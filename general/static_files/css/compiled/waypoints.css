@@ -1,0 +1,99 @@
+/*           WAYPOINTS           */
+/*********************************/
+.waypoint {
+  cursor: default;
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  color: #888888;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-font-weight: bold;
+  font-font-size: 16px;
+  z-index: 1; }
+
+.waypoint-text {
+  position: absolute;
+  margin-top: 32px;
+  z-index: 2;
+  white-space: nowrap; }
+
+#wp-input > textarea {
+  padding: 0;
+  width: 400%;
+  left: -150%;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #888888;
+  box-shadow: none;
+  border: none;
+  resize: none;
+  border-radius: 0px;
+  /* show caret! */ }
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .waypoint-text, #wp-input > textarea {
+    background-color: black;
+    color: transparent;
+    text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.78);
+    -webkit-background-clip: text;
+    -moz-background-clip: text;
+    background-clip: text; } }
+svg {
+  position: absolute;
+  z-index: 1; }
+
+/*           WAYPOINT TAGS           */
+/*************************************/
+#waypoint-tags {
+  position: fixed;
+  left: 20px;
+  bottom: 23px;
+  max-width: 90%;
+  height: 35px;
+  z-index: 10000; }
+
+.ui-sortable-placeholder {
+  display: inline-block;
+  margin-top: -10px; }
+
+#hide-tags {
+  position: relative;
+  top: 5px;
+  padding: 0px 5px 2px 3px;
+  font-size: 30px;
+  color: #777777;
+  text-shadow: 2px 3px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer; }
+
+.waypoint-tag {
+  position: relative;
+  padding: 6px 10px;
+  margin-right: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #444444;
+  border-radius: 4px;
+  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.4);
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  background: #ffeaa5;
+  /* Old browsers */
+  background: -moz-linear-gradient(top, #ffeaa5 0%, #eac369 100%);
+  /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ffeaa5), color-stop(100%, #eac369));
+  /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top, #ffeaa5 0%, #eac369 100%);
+  /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top, #ffeaa5 0%, #eac369 100%);
+  /* Opera 11.10+ */
+  background: -ms-linear-gradient(top, #ffeaa5 0%, #eac369 100%);
+  /* IE10+ */
+  background: linear-gradient(to bottom, #ffeaa5 0%, #eac369 100%);
+  /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffeaa5', endColorstr='#eac369',GradientType=0 );
+  /* IE6-9 */ }
+
+#add-waypoint {
+  padding-right: 6px;
+  margin-left: -4px; }
