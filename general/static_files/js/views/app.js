@@ -710,8 +710,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			return model;
 		},
 		
-		// Add object to page from app clipboard in the
-		// same relative location that it was copied/cut from. 
+		// Iterate through the app clipboard, pasting each item.
 		pasteFromColl: function() {
 			
 			this.undoMarker('group_end');
@@ -723,6 +722,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Add object to page from app clipboard in the
+		// same relative location that it was copied/cut from. 
 		pasteMarkFromColl: function(model, i, last) {
 			
 			var clone = this.clone(model);
@@ -742,7 +743,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			}});
 		},
 		
-		// Clones a model without replicating the id.
+		// Clone a model without replicating the id.
 		clone: function(model) {
 			
 			var attrs = _.clone(model.attributes);
@@ -758,6 +759,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  /////////////////////////
 		
 		
+		// Align all selected objects to the x-value of the top object,
+		// and space them evenly on the page.
 		list: function($marks) {
 			
 			var align = false;
@@ -781,6 +784,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			}
 		},
 		
+		// Sort marks by y-value so that spacing them evenly
+		// doesn't cause any rearrangement.
 		sortMarksByTop: function($marks) {
 			
 			var marks = $marks.get();
@@ -813,6 +818,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			return marks;
 		},
 
+		// Align all marks to the x-value of the top mark (for readability).
 		leftAlignMarks: function($marks, $first) {
 			
 			var x = $first.offset().left;
@@ -830,6 +836,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Find the bottom of each mark, and put the next mark
+		// SPACING pixels below it.
 		evenlySpace: function(marks) {
 			
 			var $prev = marks[0];
@@ -866,6 +874,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 		// see from the assignments below).  I decided to leave it undo-specific
 		// because using ambiguous names made the functions much less clear/readable.
 		
+		// Initiate undo process if possible; make error sound otherwise.
 		undo: function(isRedo) {
 			
 			var Undos = app.Undos, Redos = app.Redos;
@@ -882,6 +891,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		},
 		
+		// Begin the undo cycle, placing a group marker
+		// in the undo stack if necessary.
 		prepareUndo: function(undo, Undos, Redos) {
 			
 			var type = undo.get('type');
@@ -900,6 +911,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// For each undo: A) create a redo, B) save the new state
+		// of the object, C) destroy the undo.  Recurse to the next
+		// undo if in a group.
 		performUndo: function(undo, Undos, Redos, group) {
 
 				if (undo.get('type') === 'group_end') console.log('broken');
@@ -914,6 +928,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 				if (group) this.recurseUndo(Undos, Redos);
 		},
 		
+		// Perform the next undo.  If none left, signal the end
+		// of the group.
 		recurseUndo: function(Undos, Redos) {
 			
 			var undo = Undos.pop();
@@ -931,6 +947,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			}
 		},
 		
+		// Helper function to transfer properties from
+		// one object to another.
 		currentState: function(obj) {
 			
 			return {
@@ -944,6 +962,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Record the properties needed to save the former
+		// state of an object.
 		formerState: function(undo) {
 			
 			return {
@@ -960,6 +980,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  // ***** ZOOMING ***** //
 	  /////////////////////////
 		
+
+		// Make sure zoom is allowed.
 		prepareZoom: function(e) {
 
 			if (this.$('.input:visible').length) return; // Let arrow keys move around input when editing.
@@ -972,6 +994,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		},
 
+		// Figure out new scale after zoom.  Call all zooming
+		// actions if the zoom is allowed.
 		zoom: function(rel_factor) {
 			
 			var $wall = $('#wall');
@@ -995,6 +1019,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Scale the page according to the new scale.
 		resizePage: function(new_width, new_height, $wall) {
 			
 			$wall.animate({
@@ -1006,8 +1031,12 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
-		recenterWindow: function(rel_factor) {  // Page grows/shrinks from right and bottom
-												// during zoom, so needs to be recentered.
+		// Because page grows/shrinks from right/bottom, page needs to be
+		// recentered via scrolling so user can stay where they are on the page.
+		// This recentering should be invisible to the user because it happens
+		// at the same time and speed as the page resizing.
+		recenterWindow: function(rel_factor) {
+			
 			var $w = $(window);
 			var half_width  = $w.width()  / 2;
 			var half_height = $w.height() / 2;
@@ -1033,6 +1062,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  ///////////////////////////////
 		
 		
+		// TODO: use an object so you can get collection by
+		// doing `app.colls['mark']` instead of this if/else.
 		getColl: function(type) {
 			
 			if (type === 'mark') {
@@ -1043,16 +1074,26 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Empty redo stack (when any action is taken besides
+		// undoing/redoing).
 		clearRedos: function() {
 			app.Redos.reset();
 		},
 		
+		// Update view variable so that inputs can be opened normally.
+		// (When app.dragging is true, input doesn't open on mouseup, because
+		// the drag wasn't meant to be a click.)
 		resetDragging: function() {
 			app.dragging = false;
 		},
 		
 		doNothing: function(e) { e.stopPropagation(); },
 		
+
+// These are helper functions to measure the difference in time between
+// queueing AJAX request and executing them simultaneously.
+
+
 		calculateTime: function(start, type) {
 			
 			var end = new Date();
