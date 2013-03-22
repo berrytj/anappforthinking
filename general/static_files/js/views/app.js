@@ -322,7 +322,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			coll.create(attributes, { success: this.createEmptyUndo });
 		},
 
-		
+		// Close an input, while saving / acting on whatever information
+		// the input contains.
 		closeInput: function(type) {
 			
 			var container, textarea, coll;
@@ -352,6 +353,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Hide any inputs that are open; show the mark
+		// creation input if no inputs are open.
 		toggleInput: function(e) {
 			
 			if (app.dragging) return;
@@ -381,6 +384,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			}
 		},
 		
+		// Clear selection from all marks and waypoints --
+		// like clearing the selection from desktop icons.
 		clearSelected: function() {
 			
 			this.$('.ui-selected').each(function() {
@@ -392,6 +397,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Show the input where the page was clicked, or right
+		// below where the last mark was saved.  Style the input
+		// according to app zoom level.
 		showInput: function(e) {
 			
 			var left, top;
@@ -419,6 +427,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			this.input.focus();
 		},
 
+		// Called on page load -- use jQuery UI to make
+		// marks and waypoints selectable (by making the wall
+		// 'a selectable').
 		makeSelectable: function() {
 
 			var that = this;
@@ -443,6 +454,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 					if (e.shiftKey) that.$('.ui-selected').addClass('preselected');
 				},
 				
+				// Set styling for marks and waypoints when they become
+				// selected / unselected.
 				selecting: function(e, ui) {
 					
 					var $obj = $(ui.selecting);
@@ -464,6 +477,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 					$(ui.unselecting).find('circle').css('stroke', STROKE_COLOR);
 				},
 				
+				// React to selection action ending by updating state.
 				stop: function() {
 
 					$(window).unbind('mousemove');
@@ -476,6 +490,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 
 		},
 		
+		// Scoll when the mouse gets near the edge of the wall when selecting.
+		// Scrolling happens when mouse distance from wall is below scroll
+		// sensitivity ('sens').  Adapted from scrolling in jQuery Draggable source.
 		scrollWhileSelecting: function() {
 
 			$(window).mousemove(function(e) {
@@ -512,6 +529,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 	  ////////////////////////////////
 		
 		
+		// Set up a group undo in anticipation of items
+		// being cut from page.
 		cut: function() {
 			
 			this.undoMarker('group_end');
@@ -520,6 +539,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Add all copied/cut objects to app clipboard
+		// (not system clipboard).
 		copy: function(cut) {
 			
 			var $selected = this.$('.ui-selected');
@@ -539,6 +560,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Save relative location of object to be copied/cut;
+		// clear object if using 'cut'.
 		copyObject: function(view, cut) {
 			
 			var clone = this.clone(view.model);
@@ -553,6 +576,11 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			app.Clipboard.add(clone);
 		},
 		
+		// In progress: still deciding how to mediate between
+		// objects pasted from the app and objects pasted from
+		// system clipboard.  Right now, this function pastes from
+		// the system clipboard by default, but pastes from the app
+		// if the system clipboard is empty.
 		paste: function() {
 			
 			// If input field is open, copy/paste normally.
@@ -570,6 +598,7 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			
 		},
 		
+		// Open and focus on an invisible input for pasted text to fall into.
 		catchPaste: function() {
 			
 			this.input.css('opacity', 0)
@@ -579,6 +608,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 					  .focus();
 		},
 		
+		// Take text from hidden input, save it, and
+		// space it on the page accordingly once it's
+		// been saved.  [TODO: space immediately, then save.]
 		convertTextToMarks: function() {
 			
 			var text = this.input.val();
@@ -594,6 +626,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			});
 		},
 		
+		// Space pasted marks; save their new locations
+		// when the animation finishes.
 		spacePastedMarks: function(marks) {
 			
 			this.evenlySpace(marks);
@@ -609,6 +643,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			});
 		},
 		
+		// Build a promise from an array of marks,
+		// that resolves when all animations finish.
 		promiseFromArray: function(marks) {
 			
 			var $marks = $();
@@ -620,6 +656,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			return $marks.promise();
 		},
 		
+		// Once text from system clipboard is caught, divide it into marks
+		// at each newline, then create a model and a view for each.
 		pasteFromText: function(text, saving) {
 			
 			var lines = _.without(text.split('\n'), '');
@@ -644,6 +682,9 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			return marks;
 		},
 		
+		// Create a model for a newly pasted mark.  Passing 'silent'
+		// rather than creating a view automatically because we need to
+		// hold onto each newly-created view for spacing purposes.
 		pasteLineFromText: function(line, x, y, waiting) {
 			
 			var attrs = {
@@ -669,6 +710,8 @@ var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
 			return model;
 		},
 		
+		// Add object to page from app clipboard in the
+		// same relative location that it was copied/cut from. 
 		pasteFromColl: function() {
 			
 			this.undoMarker('group_end');
