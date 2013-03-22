@@ -9,6 +9,7 @@ var WP_FONT_SIZE = 16;
 	
 	'use strict';
 	
+	// Waypoint extends Object.
 	app.WaypointView = app.ObjectView.extend({
 		
 		className: 'waypoint',
@@ -41,6 +42,8 @@ var WP_FONT_SIZE = 16;
 			
 		},
 		
+		// Create a tag to be displayed on the bottom of the screen,
+		// corresponding to this waypoint.
 		createTag: function(text) {
 				
 			var view = new app.TagView({ waypoint: this, text: text });
@@ -49,6 +52,7 @@ var WP_FONT_SIZE = 16;
 
 		},
 		
+		// Toggle selection of waypoint if certain keys are held during click.
 		respondToClick: function(e) {
 
 			if (e.shiftKey || e.metaKey || e.ctrlKey) {
@@ -61,6 +65,9 @@ var WP_FONT_SIZE = 16;
 
 		},
 
+		// Waypoint starts out wide enough to handle lots of text,
+		// but needs to be shrinkwrapped so the eventual empty space around it
+		// doesn't result in dragging / selecting.
 		shrinkwrap: function() {
 
 			var $text = this.$el.children('.waypoint-text');
