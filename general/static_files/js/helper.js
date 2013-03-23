@@ -39,8 +39,9 @@ var addToQueue = function() {
 		
 		if (app.disconnected) {
 
+			alert('Connection lost.  Please refresh the browser.');
 			//resave everything
-			app.disconnected = false;
+			//app.disconnected = false;
 
 		} else if (app.queue.state() === 'resolved') {
 			app.dispatcher.trigger('saved');
