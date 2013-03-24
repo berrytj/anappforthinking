@@ -1,12 +1,9 @@
-// The Application
-// ---------------
-// There may be some lingering code from an example that
-// I was learning from: addyosmani.github.com/todomvc/
 
 var app = app || {};
 
-var PASTE_Y_FACTOR = 0.33;
+var PASTE_Y_FACTOR = 0.33;  // Pasted text gets put 33% down the page.
 
+// Keep track of key codes for triggering functions.
 var ENTER_KEY = 13;
 var UP_KEY = 38;
 var DOWN_KEY = 40;
@@ -15,35 +12,40 @@ var X_KEY = 88;
 var C_KEY = 67;
 var V_KEY = 86;
 
+// Save wall URL for AJAX calls.
 var WALL_URL = API_NAME + "/wall/" + wall_id + "/";
 
+// Set multiplier to zoom in/out by.
 var ZOOM_OUT_FACTOR = 0.8;
 var ZOOM_IN_FACTOR = 1 / ZOOM_OUT_FACTOR;
-var MAX_FACTOR = 12;
+var MAX_FACTOR = 12; // Don't allow more than 12 zoom-ins.
 
-var INPUT_OFFSET_X = 10;
-var INPUT_OFFSET_Y = 4;
-var SPACING = 2;
+var INPUT_OFFSET_X = 10; // Input opens up and to the left of mouseclick
+var INPUT_OFFSET_Y = 4;  // location to compensate for input padding.
+var SPACING = 2; 		 // When put into `list` form, space marks by this amount.
 
+// Don't enable selectable until mouse has moved this far.
 var SELECTABLE_DISTANCE = 10;
 
+// Wait until paste action has finished before collecting text.
 var WAIT_FOR_PASTE = 100;
-var LIST_PAUSE = 1500;
-var LIST_ANIMATE = 150;
-var WAIT_FOR_DRAG = 130;
-var INPUT_FADE = 0;
-var LOADING_FADE = 350;
-var TIME = 0;  // Go slower if you can make font size animation less choppy.
-var ANIM_OPTS = { duration: TIME, queue: false };  // Animation options.
-var ANIMATE_UNDO = { duration: 100, queue: false };  // Animation options.
-var EXTRA = 1.2;
-															 // Get items for this wall only.  Don't 
-var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };  // limit quantity returned (default is 20).
+
+var LIST_ANIMATE = 150; // Animation time for `list` action.
+var INPUT_FADE = 0;		// Fade time for input (in and out).
+var LOADING_FADE = 350; // Fade time for 'loading...' signal.
+var TIME = 0;           // Zoom animation time. (Go slower if you can make font-size animation less choppy.)
+var ANIM_OPTS    = { duration: TIME, queue: false };  // Animation options.
+var ANIMATE_UNDO = { duration: 100,  queue: false };  // Undo animation options.
+
+// Options for initial fetch of models from DB:
+// Get items for this wall only; don't limit quantity returned (default is 20).
+var FETCH_OPTS = { data: { wall__id: wall_id, limit: 0 } };
 
 var WP_PADDING = 6;
-var CIRCLE_WIDTH = 84;
-var STROKE_COLOR = '#BBBBBB';
-var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)';
+var CIRCLE_WIDTH = 84; // Width of waypoint SVG circle.
+var STROKE_COLOR = '#BBBBBB'; // Color of SVG circle stroke.
+var SELECTED_STROKE_COLOR = 'rgba(222,170,29,1)'; // Color of SVG circle stroke when waypoint is selected.
+
 
 (function() {
 	

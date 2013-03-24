@@ -7,44 +7,62 @@ var app = app || {};
 	
 	'use strict';
 	
-	// Object descendants include marks and waypoints.
+	// Object view is extended by `mark` and `waypoint` views.
 	app.ObjectView = Backbone.View.extend({
 		
-		// The DOM events specific to an item.
 		events: {
-			'click .input' : 'doNothing',
+			'click .input' : 'doNothing',  // Don't do anything when input is clicked.
 			'click'        : 'cleanup',
 		},
 		
 		initialize: function() {
 			
+			// Update view when model changes.
 			this.model.on('change', this.render, this);  // Called after editing text, performing undo, trashing...
-			this.$el.data('view', this);                 // Accessed after dragging, dropping...
-			app.dispatcher.on('zoom:objects', this.zoom, this);
-			this.makeDraggableOnce = _.once(this.makeDraggable);
-			this.AXIS_SWITCH_MAX = 100;
+			
+			// Give jQuery element a pointer to its view.
+			this.$el.data('view', this);  // Accessed after dragging, dropping...
 
+			// Subscribe to 'zoom:objects' event.
+			app.dispatcher.on('zoom:objects', this.zoom, this);
+
+			 // Don't makeDraggable every time the mark gets rendered.
+			this.makeDraggableOnce = _.once(this.makeDraggable);
+
+			// Don't switch from dragging along x-axis to
+			// dragging along y-axis unless within this many
+			// pixels of the drag origin.
+			this.AXIS_SWITCH_MAX = 100;
 		},
 		
+
 		render: function() {
 
+			// Find out if element is attached to page.
 			var onPage = this.$el.parents().length;
 
+			// Only draw if model has text.
 			if (this.model.get('text')) {
 				
+				// Save animation options as a clone (so they can be
+				// modified without modifying the original).
 				var options = _.clone(ANIMATE_UNDO);
 				
+				// Add to page if not currently attached.
 				if (!onPage) {
 					this.putBackOnPage(this.$el);
 					options['duration'] = 0;  // Don't animate when first putting on page.
 				}
 				
 				this.draw(options);
-				this.zoomSize();
-				this.shrinkwrap();
-				this.makeDraggableOnce();
+				this.zoomSize();		   // Zoom properly.
+				this.shrinkwrap();  	   // Size properly after zoom.
+				this.makeDraggableOnce();  // Make draggable (only gets called the first time).
 				
 			} else {
+
+				// Detach element from page if it has no text, so we
+				// don't get slowed down by calling transformations on it.
 				if (onPage) this.$el.detach();
 			}
 			
@@ -53,6 +71,7 @@ var app = app || {};
 		
 		draw: function(options) {
 			
+			// Feed model to template to get HTML for element.
 			var html = this.template(this.model.toJSON());
 
 			this.$el.html(html)
@@ -62,18 +81,21 @@ var app = app || {};
 					}, options);
 		},
 		
+
 		putBackOnPage: function($el) {
 
 			$el.appendTo('#wall')
 			   .removeClass('ui-draggable-dragging dragged dropped');
 			
+			// Need to destroy and recreate draggable once
+			// object has been detached from page.
 			if ($el.hasClass('ui-draggable')) $el.draggable('destroy');
-			
-			this.makeDraggableOnce = _.once(this.makeDraggable);
+			this.makeDraggableOnce = _.once(this.makeDraggable); // Enable makeDraggable function.
 		},
 
 		zoom: function(rel_factor) {
 			
+			// Don't zoom if object has no text.
 			if (this.model.get('text') === '') return;
 
 			this.zoomSize();
@@ -81,6 +103,7 @@ var app = app || {};
 			
 			var pos = this.$el.offset();
 			
+			// Move to new location based on expansion/contraction of page.
 			this.$el.animate({
 				
 				left: pos.left * rel_factor,
@@ -97,16 +120,19 @@ var app = app || {};
 			
 		},
 		
+		// Update model / DB with current location of object.
 		saveLocation: function() {
 			
 			var loc = this.$el.offset();
 			
 			this.model.save({
 				
+				// Divide by `app.factor` so all saved
+				// coordinates can be compared to each other.
 				x: Math.round( loc.left / app.factor ),
 				y: Math.round( loc.top  / app.factor )
 				
-			}, { silent: true });  // Element has already moved
+			}, { silent: true });  // Element has already moved.
 			
 		},
 		
@@ -115,11 +141,13 @@ var app = app || {};
 			e.stopPropagation();
 			
 			this.respondToClick(e);
-			this.$el.removeClass('dragged');  // Free the element to be edited next time it gets clicked.
+			this.$el.removeClass('dragged');  // Free the element to be edited when next clicked.
 			
 			app.dispatcher.trigger('close:inputs', e);
 		},
 		
+		// Save the current state of the object model into an
+		// undo model before updating the object's state.
 		createUndo: function() {
 			
 			app.dispatcher.trigger('clear:redos');
@@ -138,6 +166,9 @@ var app = app || {};
 			app.Undos.create(current_state);
 		},
 		
+		// Clear the model's text, resulting in the
+		// object being cleared from the screen during
+		// the ensuing `render` operation.
 		clear: function() {
 			
 			this.createUndo();
@@ -145,18 +176,21 @@ var app = app || {};
 			
 		},
 		
+		// If dragging a selected mark, save the location
+		// of the other selected marks (relative to the mark
+		// being dragged) so their positions can be updated
+		// during the dragging operation.
 		setInitialDragPositions: function($obj) {
 			
-			// If dragging selected mark, save initial location
-			// of all selected marks as basis for relative position
-			// adjustments during dragging.
-			
+			// $obj is the object being dragged.
 			var reference = $obj.offset();
 
 			$('.ui-selected').each(function() {
 				
 				var pos = $(this).offset();
 				
+				// Storing the relative locations in each
+				// element's jQuery `data` property.
 				$(this).data({
 					x: pos.left - reference.left,
 					y: pos.top  - reference.top,
@@ -165,15 +199,18 @@ var app = app || {};
 			});
 		},
 		
+		// Add the position of the object being dragged
+		// to each element's saved offset amounts and
+		// update each element's location with the result.
 		updateDragPositions: function($obj) {
 			
 			var reference = $obj.offset();
 
-			$('.ui-selected').not($obj).each(function() {  // Move all selected marks relative to their initial position.
+			$('.ui-selected').not($obj).each(function() {
 				
 				$(this).css({
-					left: $(this).data('x') + reference.left,
-					top:  $(this).data('y') + reference.top,
+					left: reference.left + $(this).data('x'),
+					top:  reference.top  + $(this).data('y'),
 				});
 
 			});
