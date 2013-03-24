@@ -8,18 +8,18 @@ var API_NAME = "/api/v1";
 	
 	'use strict';
 	
-	// Tastypie Model
-	// --------------
-	// Extended to clean the data from Tastypie to work with Backbone.
-	
+	// TastypieModel cleans the data from Tastypie to work
+	// properly with Backbone.
 	window.TastypieModel = Backbone.Model.extend({
 		
+		// Override Backbone sync by adding AJAX call to queue with
+		// Backbone sync as a callback, so that we don't make calls
+		// in the wrong order.
 		sync: function(method, model, options) {
-
-			addToQueue(method, model, options, this, Backbone.sync);
-			
+			addToQueue(method, model, options, this, Backbone.sync);	
 		},
 		
+		// Give Backbone the API url in the proper format.
 		base_url: function() {
 			var temp_url = Backbone.Model.prototype.url.call(this);
 			return (temp_url.charAt(temp_url.length - 1) == '/' ? temp_url : temp_url + '/');
@@ -44,16 +44,12 @@ var API_NAME = "/api/v1";
 	
 	
 	app.Mark = app.Obj.extend({
-		
 		type: "mark",
-		
-	});	
+	});
 	
 	
 	app.Waypoint = app.Obj.extend({
-		
 		type: "waypoint",
-		
 	});
 	
 	

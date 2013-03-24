@@ -1,4 +1,6 @@
 
+// INDEX PAGE (WALL LIST)
+// ----------------------
 
 var index = {
 	DIALOG_HEIGHT: 140,
@@ -8,6 +10,7 @@ var index = {
 	PLUS_FADE:     50,
 };
 
+// Hide the modal dialog that confirms wall deletion.
 var closeDialog = function($dialog) {
 
 	$dialog.dialog('close');
@@ -15,12 +18,17 @@ var closeDialog = function($dialog) {
 
 };
 
+// Hide the cursor once new wall input shows up for
+// simplicity / clean UX in anticipation of user typing.
 var hideCursor = function() {
 
 	var $input = $('#new-wall-input');
 	
 	$input.focus().css('cursor', 'none');
 
+	// Show cursor when mouse is moved again. (If we
+	// bind this event without a `setTimeout`, it gets
+	// invoked during click and the cursor never hides.)
 	setTimeout(function() {
 
 		$('body').mousemove(function() {
@@ -32,12 +40,15 @@ var hideCursor = function() {
 
 };
 
+// Supply the properties of the `delete wall` and `cancel`
+// buttons in the `delete wall` dialog box.
 var getButtons = function(id, $name_div, $dialog) {
 
 	return {
 
-		Yes: function() {
+		Yes: function() {  // Delete wall.
 
+			// Makes a call to the server via the Tastypie API.
 			$.ajax({
 				url: '/api/v1/wall' + id,  // `id` is format /1/
 				type: 'DELETE',
@@ -45,12 +56,12 @@ var getButtons = function(id, $name_div, $dialog) {
 				dataType: 'json',
 			});
 
-			$name_div.remove();
+			$name_div.remove(); // Remove wall name from list.
 			closeDialog($dialog);
 
 		},
 
-		Cancel: function() {
+		Cancel: function() {  // Don't delete wall.
 			closeDialog($dialog);
 		},
 
@@ -58,12 +69,16 @@ var getButtons = function(id, $name_div, $dialog) {
 
 };
 
+// Close dialog if screen is clicked anywhere
+// but inside dialog.
 var closeOnClick = function($dialog) {
 
 	$('.ui-dialog').click(function(e) {
 		e.stopPropagation();
 	});
 
+	// Don't call right away or dialog will
+	// be closed by the click that opened it.
 	setTimeout(function() {
 
 		$(window).click(function() {
@@ -76,14 +91,20 @@ var closeOnClick = function($dialog) {
 
 $(function() {
 	
+	// Show input and submit button for new wall
+	// name when `add wall` button (plus sign) is clicked.
 	$('#add-wall').click(function(e) {
 
-		$(this).remove();
+		$(this).remove(); // Hide `add wall` button.
+		
 		// set guide text / style if first wall?
+
 		$('#new-wall-form').fadeIn(index.FORM_FADE, function() { hideCursor(); });
 
 	});
 	
+	// Show dialog asking for confirmation if user clicks
+	// on a `delete wall` (x) button.
 	$('.delete-wall').click(function(e) {
 
 		var $name = $(this).siblings('a');
@@ -108,8 +129,12 @@ $(function() {
 		
 	});
 
+	// Show `new wall` input right away, rather than
+	// `add wall` button, if no walls have been created yet.
 	!$('.wall-name').length ? $('#add-wall').click() : $('#add-wall').show();
 
 	
 });
+
+
 

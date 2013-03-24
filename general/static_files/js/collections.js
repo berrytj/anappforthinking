@@ -1,68 +1,61 @@
 var app = app || {};
 
 (function() {
-    
-    'use strict';
-    
-    window.TastypieCollection = Backbone.Collection.extend({
-        
-        parse: function(response) {
-            this.recent_meta = response.meta || {};
-            return response.objects || response;
-        }
-        
-    });
-    
-    
-    // Mark Collection
-    // ---------------
-    
+	
+	'use strict';
+	
+	// TastypieCollection translates the response
+	// into a format that Backbone can work with.
+	window.TastypieCollection = Backbone.Collection.extend({
+		
+		parse: function(response) {
+			this.recent_meta = response.meta || {};
+			return response.objects || response;
+		}
+		
+	});
+	
+
+	
 	var MarkSet = window.TastypieCollection.extend({
-	    
+		
 		model: app.Mark,
 		url: API_NAME + "/mark",
 		
 	});
 	
-	// Create our global collection of **Marks**.
-	app.Marks = new MarkSet();
+	app.Marks = new MarkSet(); // Create our global collection of Marks.
 	
+
 	
-	// Waypoint Collection
-    // -------------------
-    
 	var WaypointSet = window.TastypieCollection.extend({
-	    
+		
 		model: app.Waypoint,
 		url: API_NAME + "/waypoint",
 		
 	});
 	
-	// Create our global collection of **Waypoints**.
-	app.Waypoints = new WaypointSet();
+	app.Waypoints = new WaypointSet(); // Create our global collection of Waypoints.
 	
 	
-	// Undo Collection
-    // ---------------
-	
+
 	var UndoSet = window.TastypieCollection.extend({
-	    
+		
 		model: app.Undo,
 		url: API_NAME + "/undo",
 		name: "undo",
 		
 	});
 	
-	// Create our global collection of **Undos**.
-	app.Undos = new UndoSet();
+	app.Undos = new UndoSet(); // Create our global collection of Undos.
+
+	// Undos need to be retrieved in order (LIFO).
 	app.Undos.comparator = function(model) {
-		return parseInt(model.get('id'));
+		return parseInt(model.get('id')); // In case `id` is saved as a string.
 	};
 	
 	
-	// Redo Collection
-    // ---------------
-    
+
 	var RedoSet = window.TastypieCollection.extend({
 		
 		model: app.Redo,
@@ -71,19 +64,18 @@ var app = app || {};
 		
 	});
 	
-	// Create our global collection of **Redos**.
-	app.Redos = new RedoSet();
+	app.Redos = new RedoSet(); // Create our global collection of Redos.
+
+	// Undos need to be retrieved in order (LIFO).
 	app.Redos.comparator = function(model) {
-		return parseInt(model.get('id'));
+		return parseInt(model.get('id')); // In case `id` is saved as a string.
 	};
 	
+
 	
-	// Clipboard
-    // ---------
-    
 	var Clipboard = window.TastypieCollection.extend({});
 	
-	// Create our global `Clipboard`.
+	// Create our global Clipboard.
 	app.Clipboard = new Clipboard();
 	
 	
