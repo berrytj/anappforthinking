@@ -1,5 +1,7 @@
-// (Single) Waypoint Tag View
+// Waypoint Tag View (single)
 // --------------------------
+// Each waypoint has a corresponding waypoint tag that,
+// when clicked, initiates a scroll to the waypoint.
 
 var app = app || {};
 var WP_SCROLL_TIME = 1000;
@@ -13,7 +15,6 @@ var WP_SCROLL_TIME = 1000;
 		tagName: 'span',
 		className: 'waypoint-tag',
 		
-		// The DOM events specific to an item.
 		events: {
 			'click': 'moveToWaypoint',
 		},

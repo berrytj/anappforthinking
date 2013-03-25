@@ -1,10 +1,20 @@
-// Waypoint Tags View
-// ------------------
+// Waypoint Tags View (group)
+// --------------------------
+// The waypoint tags are arranged in a group
+// at the bottom of the screen that can be persistently
+// sorted, as well as hidden/unhidden from view.
 
 var app = app || {};
-var HIDE_TIME = 250;
+
+var HIDE_TIME = 250; // Duration of animation that hides the waypoint tags.
 var ARROW_PADDING = 26;
+
+// Show input 40% from the top of the window. (Different than
+// WP_Y_FACTOR to prevent opening the input directly on top
+// of an existing waypoint, which is a little confusing visually.)
 var ORIG_WP_Y_FACTOR = 0.4;
+
+// When scrolling to waypoint, position it at 35% from the top.
 var WP_Y_FACTOR = 0.35;
 
 (function() {
@@ -26,8 +36,8 @@ var WP_Y_FACTOR = 0.35;
 
 		initialize: function() {
 
-			app.dispatcher.on('sort:tags',      this.getSortOrder, this);
-			app.dispatcher.on('update:tagsort', this.updateSort,   this);
+			app.dispatcher.on('sort:tags',      this.getSortOrder, this); // GET sort order.
+			app.dispatcher.on('update:tagsort', this.updateSort,   this); // POST sort order.
 
 		},
 
@@ -40,8 +50,14 @@ var WP_Y_FACTOR = 0.35;
 			$.get('/sortTags/', { wall_id: wall_id }, function(order) {
 				
 				if (order) that.sortTags(order);
+
+				// Must wait until tags have been sorted to make them sortable by the user.
 				that.makeSortable();
+
+				// Only show tags after sorting to avoid confusion.
 				that.$el.show();
+
+				// Save the position of the tags, to return to after hiding them.
 				that.TAGS_LEFT = that.$el.offset().left - $(document).scrollLeft();
 				
 			});
@@ -55,6 +71,8 @@ var WP_Y_FACTOR = 0.35;
 			var array = JSON.parse(order);
 			var that = this;
 
+			// Appending the tags from first to last
+			// means they'll end up in order.
 			_.each(array, function(id) {
 				that.$('#'+id).appendTo( that.$('#sortable-tags') );
 			});
@@ -69,12 +87,13 @@ var WP_Y_FACTOR = 0.35;
 
 			this.$('#sortable-tags').sortable({
 
-				axis: 'x',
+				axis: 'x',				// Sort op allows dragging on x-axis only.
 				items: '.waypoint-tag',
-				scroll: false,
+				scroll: false,			// Don't scroll during sort op (annoying).
 				tolerance: 'pointer',
-				zIndex: 10000,
-				update: function(ev, ui) {
+				zIndex: 10000,			// TODO: lower below toolbar.
+
+				update: function(e, ui) {
 					that.updateSort();
 				},
 
@@ -115,11 +134,13 @@ var WP_Y_FACTOR = 0.35;
 			
 			if (button.html() === '«') {
 
+				// Move the tags offscreen until only the arrow is showing.
 				x = -1 * ( button.offset().left - $(document).scrollLeft() - ARROW_PADDING );
 				arrow = '»';
 
 			} else {
 				
+				// Move the tags back to their original position.
 				x = this.TAGS_LEFT;
 				arrow = '«';
 

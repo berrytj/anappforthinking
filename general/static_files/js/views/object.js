@@ -216,6 +216,8 @@ var app = app || {};
 			});
 		},
 		
+		// Make object draggable, providing for group dragging,
+		// dragging along an axis, and updating position upon drag-stop.
 		makeDraggable: function() {
 			
 			var that = this;
@@ -258,6 +260,12 @@ var app = app || {};
 			});
 		},
 		
+		// Hold along axis while dragging, switching axes if
+		// object is brought closer to disabled axis than enabled
+		// axis, provided that the object is within AXIS_SWITCH_MAX
+		// of the drag origin. (When user is farther from the drag
+		// origin, we don't want them to have to worry about
+		// accidentally switching axes.)
 		dragAlongAxis: function(e, ui, $obj) {
 
 			var axis = $obj.draggable('option', 'axis');
@@ -268,13 +276,15 @@ var app = app || {};
 			var new_axis = (x_diff > y_diff) ? 'x' : 'y';
 			var max = this.AXIS_SWITCH_MAX;
 
-			if ( !axis || (new_axis !== axis && x_diff < max && y_diff < max) ) {
+			if (!axis || (new_axis !== axis && x_diff < max && y_diff < max)) {
 				$obj.draggable('option', 'axis', new_axis);
 			}
 
 			if (!axis) this.listenForKeyup($obj);
 		},
 
+		// Store original x and y positions in view variables,
+		// and prevent movement along disabled axis.
 		holdAlongAxis: function($obj, axis) {
 
 			var prop = (axis === 'x') ? 'top' : 'left';
@@ -283,6 +293,7 @@ var app = app || {};
 			$obj.get()[0].style[prop] = hold + 'px';
 		},
 
+		// Release axis holding if shift key is lifted during drag.
 		listenForKeyup: function($obj) {
 
 			$(window).keyup(function(e) {
@@ -295,12 +306,15 @@ var app = app || {};
 			});
 
 		},
-
-		doNothing: function(e) { e.stopPropagation(); },
 		
-		shrinkWrap: function() {  // In case 'W' is accidentally capitalized.
+		// Call `shrinkwrap` anyway if 'W' is
+		// accidentally capitalized in function call.
+		shrinkWrap: function() {
 			this.shrinkwrap();
 		},
+
+		// Don't let click propagate / trigger events in other views.
+		doNothing: function(e) { e.stopPropagation(); },
 		
 	});
 

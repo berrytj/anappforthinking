@@ -1,5 +1,8 @@
 // Toolbar View
 // ------------
+// The toolbar resides at the top of a wall,
+// and provides a number of model and view
+// manipulation options.
 
 var app = app || {};
 
@@ -11,7 +14,6 @@ var app = app || {};
 		
 		el: "#toolbar",
 		
-		// The DOM events specific to an item.
 		events: {
 			'click':            'doNothing',
 			'click #zoom-in':   'zoomIn',
